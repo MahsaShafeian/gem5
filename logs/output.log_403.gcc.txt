@@ -1,0 +1,1 @@
+./run_Spec2006-Simple_Modified.sh: line 104: /home/amin/Documents/Storage/gem5/build/ARM/gem5.opt: No such file or directory
