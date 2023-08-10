@@ -47,11 +47,13 @@
 
 #include "base/compiler.hh"
 #include "base/logging.hh"
+#include "base/trace.hh"
 #include "debug/Cache.hh"
 #include "debug/CacheComp.hh"
 #include "debug/CachePort.hh"
 #include "debug/CacheRepl.hh"
 #include "debug/CacheVerbose.hh"
+#include "debug/FatAndThin.hh"
 #include "debug/HWPrefetch.hh"
 #include "mem/cache/compressors/base.hh"
 #include "mem/cache/mshr.hh"
@@ -1148,6 +1150,7 @@ BaseCache::satisfyRequest(PacketPtr pkt, CacheBlk *blk, bool, bool)
         // supply data to any snoops that have appended themselves to
         // this cache before knowing the store will fail.
         blk->setCoherenceBits(CacheBlk::DirtyBit);
+        DPRINTF(FatAndThin, "%s for %s (write)\n", __func__, pkt->print());
         DPRINTF(CacheVerbose, "%s for %s (write)\n", __func__, pkt->print());
     } else if (pkt->isRead()) {
         if (pkt->isLLSC()) {
@@ -1240,6 +1243,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Access block in the tags
     Cycles tag_latency(0);
     blk = tags->accessBlock(pkt, tag_latency);
+
+    DPRINTF(FatAndThin, "%s for %s %s\n", __func__, pkt->print(),
+            blk ? "hit " + blk->print() : "miss");
 
     DPRINTF(Cache, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss");
