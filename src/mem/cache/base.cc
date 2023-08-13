@@ -1150,6 +1150,7 @@ BaseCache::satisfyRequest(PacketPtr pkt, CacheBlk *blk, bool, bool)
         // supply data to any snoops that have appended themselves to
         // this cache before knowing the store will fail.
         blk->setCoherenceBits(CacheBlk::DirtyBit);
+        // AM.A add log for check requests.
         DPRINTF(FatAndThin, "%s for %s (write)\n", __func__, pkt->print());
         DPRINTF(CacheVerbose, "%s for %s (write)\n", __func__, pkt->print());
     } else if (pkt->isRead()) {
@@ -1245,7 +1246,7 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     blk = tags->accessBlock(pkt, tag_latency);
 
     DPRINTF(FatAndThin, "%s for %s %s\n", __func__, pkt->print(),
-            blk ? "hit " + blk->print() : "miss");
+            blk ? "hit " + blk->print() : "miss XD");
 
     DPRINTF(Cache, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss");
@@ -1261,7 +1262,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency on top of when the packet arrives. This
         // takes into account the bus delay.
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-
+        DPRINTF(FatAndThin, "%s for %s %s (!1!) return FALSE\n",
+                __func__, pkt->print(),
+                blk ? blk->print() : "cant find blk!");
         return false;
     }
 
@@ -1294,7 +1297,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
                 // A clean evict does not need to access the data array
                 lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
-
+                DPRINTF(FatAndThin, "%s for %s %s (!CleanEviction!) TRUE\n",
+                        __func__, pkt->print(),
+                        blk ? blk->print() : "cant find blk!");
                 return true;
             } else {
                 assert(pkt->cmd == MemCmd::WritebackDirty);
@@ -1331,6 +1336,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             // and we just had to wait for the time to find a match in the
             // MSHR. As of now assume a mshr queue search takes as long as
             // a tag lookup for simplicity.
+            DPRINTF(FatAndThin, "%s for %s %s (!Clean writeback!) TRUE\n",
+                    __func__, pkt->print(),
+                    blk ? blk->print() : "cant find blk!");
             return true;
         }
 
@@ -1341,6 +1349,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (!blk) {
                 // no replaceable block available: give up, fwd to next level.
                 incMissCount(pkt);
+                DPRINTF(FatAndThin, "%s for %s %s (!2!) return FALSE\n",
+                        __func__, pkt->print(),
+                        blk ? blk->print() : "cant find blk!");
                 return false;
             }
 
@@ -1353,6 +1364,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (!updateCompressionData(blk, pkt->getConstPtr<uint64_t>(),
                 writebacks)) {
                 invalidateBlock(blk);
+                DPRINTF(FatAndThin, "%s for %s %s (!3!) return FALSE\n",
+                        __func__, pkt->print(),
+                        blk ? blk->print() : "cant find blk!");
                 return false;
             }
         }
@@ -1382,6 +1396,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
 
+        DPRINTF(FatAndThin, "%s for %s %s (!metadata arrives!) return TRUE\n",
+                __func__, pkt->print(), blk ? blk->print() : "cant find blk!");
         return true;
     } else if (pkt->cmd == MemCmd::CleanEvict) {
         // A CleanEvict does not need to access the data array
@@ -1392,12 +1408,17 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             // propagating further down the hierarchy. Returning true will
             // treat the CleanEvict like a satisfied write request and delete
             // it.
+            DPRINTF(FatAndThin, "%s for %s %s (!stop CleanEvict!)TRUE\n",
+                    __func__, pkt->print(),
+                    blk ? blk->print() : "cant find blk!");
             return true;
         }
         // We didn't find the block here, propagate the CleanEvict further
         // down the memory hierarchy. Returning false will treat the CleanEvict
         // like a Writeback which could not find a replaceable block so has to
         // go to next level.
+        DPRINTF(FatAndThin, "%s for %s %s (!4!) return FALSE\n", __func__,
+                pkt->print(), blk ? blk->print() : "cant find blk!");
         return false;
     } else if (pkt->cmd == MemCmd::WriteClean) {
         // WriteClean handling is a special case. We can allocate a
@@ -1411,6 +1432,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (pkt->writeThrough()) {
                 // if this is a write through packet, we don't try to
                 // allocate if the block is not present
+                DPRINTF(FatAndThin, "%s for %s %s (!5!) return FALSE\n",
+                        __func__, pkt->print(),
+                        blk ? blk->print() : "cant find blk!");
                 return false;
             } else {
                 // a writeback that misses needs to allocate a new block
@@ -1419,6 +1443,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                     // no replaceable block available: give up, fwd to
                     // next level.
                     incMissCount(pkt);
+                    DPRINTF(FatAndThin, "%s for %s %s (!6!) return FALSE\n",
+                            __func__, pkt->print(),
+                            blk ? blk->print() : "cant find blk!");
                     return false;
                 }
 
@@ -1432,6 +1459,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
             if (!updateCompressionData(blk, pkt->getConstPtr<uint64_t>(),
                 writebacks)) {
                 invalidateBlock(blk);
+                DPRINTF(FatAndThin, "%s for %s %s (!7!) return FALSE\n",
+                        __func__, pkt->print(),
+                        blk ? blk->print() : "cant find blk!");
                 return false;
             }
         }
@@ -1458,6 +1488,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         blk->setWhenReady(clockEdge(fillLatency) + pkt->headerDelay +
             std::max(cyclesToTicks(tag_latency), (uint64_t)pkt->payloadDelay));
 
+        DPRINTF(FatAndThin, "%s for %s %s (!write-through!) return TRUE\n",
+                __func__, pkt->print(), blk ? blk->print() : "cant find blk!");
         // If this a write-through packet it will be sent to cache below
         return !pkt->writeThrough();
     } else if (blk && (pkt->needsWritable() ?
@@ -1482,6 +1514,9 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         satisfyRequest(pkt, blk);
         maintainClusivity(pkt->fromCache(), blk);
 
+        DPRINTF(FatAndThin, "%s for %s %s (!end access!) return TRUE\n",
+                __func__, pkt->print(), blk ? blk->print() : "cant find blk!");
+
         return true;
     }
 
@@ -1495,9 +1530,12 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     if (!blk && pkt->isLLSC() && pkt->isWrite()) {
         // complete miss on store conditional... just give up now
         pkt->req->setExtraData(0);
+        DPRINTF(FatAndThin, "%s for %s %s (isWrite) return TRUE\n", __func__,
+                pkt->print(), blk ? blk->print() : "cant find blk!");
         return true;
     }
-
+    DPRINTF(FatAndThin, "%s for %s %s (!end access!) return FALSE\n", __func__,
+            pkt->print(), blk ? blk->print() : "cant find blk!");
     return false;
 }
 

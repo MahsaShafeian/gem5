@@ -50,6 +50,8 @@
 
 #include "base/intmath.hh"
 #include "base/logging.hh"
+#include "base/trace.hh"
+#include "debug/FatAndThin.hh"
 #include "mem/cache/replacement_policies/replaceable_entry.hh"
 
 namespace gem5
@@ -98,6 +100,9 @@ BaseIndexingPolicy::setEntry(ReplaceableEntry* entry, const uint64_t index)
 Addr
 BaseIndexingPolicy::extractTag(const Addr addr) const
 {
+    // AM.A Add print log for check tag addr.
+    // DPRINTF(FatAndThin, "%s for %x %x shifted count:%d\n", __func__,
+    //         addr, addr >> tagShift, tagShift);
     return (addr >> tagShift);
 }
 
