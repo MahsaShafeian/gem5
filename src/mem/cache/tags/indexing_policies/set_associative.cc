@@ -66,7 +66,18 @@ Addr
 SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
                                                                         const
 {
-    return (tag << tagShift) | (entry->getSet() << setShift);
+    std::string pName = name();
+    if (pName.compare("system.l2A.tags.indexing_policy") == 0) {
+        return ((((tag>>0)<<14)|((tag&0)<<8))|(entry->getSet()<<8));
+    } else if (pName.compare("system.l2B.tags.indexing_policy") == 0) {
+        return ((((tag>>1)<<14)|((tag&0)<<7))|(entry->getSet()<<8));
+    } else if (pName.compare("system.l2C.tags.indexing_policy") == 0) {
+        return ((((tag>>2)<<14)|((tag&0)<<6))|(entry->getSet()<<8));
+    } else if (pName.compare("system.l2D.tags.indexing_policy") == 0) {
+        return ((((tag>>3)<<14)|((tag&0)<<5))|(entry->getSet()<<8));
+    } else {
+        return (tag << tagShift) | (entry->getSet() << setShift);
+    }
 }
 
 std::vector<ReplaceableEntry*>

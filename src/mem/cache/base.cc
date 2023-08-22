@@ -773,6 +773,7 @@ void
 BaseCache::updateBlockData(CacheBlk *blk, const PacketPtr cpkt,
     bool has_old_data)
 {
+    DPRINTF(FatAndThin, "%s for %s (write)\n", __func__, blk->print());
     DataUpdate data_update(regenerateBlkAddr(blk), blk->isSecure());
     if (ppDataUpdate->hasListeners()) {
         if (has_old_data) {
@@ -1700,7 +1701,8 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setSizeBits(victim, blk_size_bits);
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
-
+    DPRINTF(FatAndThin, "%s for %s\n", __func__,
+            victim ? victim->print() : "cant find victim");
     return victim;
 }
 
