@@ -555,11 +555,28 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         DPRINTF(Cache, "Block for addr %#llx being updated in Cache\n",
                 pkt->getAddr());
 
-        const bool allocate = (writeAllocator && mshr->wasWholeLineWrite) ?
-            writeAllocator->allocate() : mshr->allocOnFill();
-        blk = handleFill(pkt, blk, writebacks, allocate);
-        assert(blk != nullptr);
-        ppFill->notify(pkt);
+        DPRINTF(FatAndThin, "Block for addr %#llx being updated in Cache\n",
+                pkt->getAddr());
+
+        std::string pName = name();
+        int pr = tags->getHistoryBlock(pkt->getAddr());
+        bool storing = true;
+        if (pName.compare("system.l2A") == 0 && pr != 0) {
+            storing = false;
+        } else if (pName.compare("system.l2B") == 0 && pr != 1) {
+            storing = false;
+        } else if (pName.compare("system.l2C") == 0 && pr != 2) {
+            storing = false;
+        } else if (pName.compare("system.l2D") == 0 && pr != 3) {
+            storing = false;
+        }
+        if (storing) {
+            const bool allocate = (writeAllocator && mshr->wasWholeLineWrite) ?
+                writeAllocator->allocate() : mshr->allocOnFill();
+            blk = handleFill(pkt, blk, writebacks, allocate);
+            assert(blk != nullptr);
+            ppFill->notify(pkt);
+        }
     }
 
     // Don't want to promote the Locked RMW Read until
@@ -643,6 +660,7 @@ BaseCache::recvAtomic(PacketPtr pkt)
     // We use lookupLatency here because it is used to specify the latency
     // to access.
     Cycles lat = lookupLatency;
+    DPRINTF(FatAndThin, "%s: packet %s\n", __func__, pkt->print());
 
     CacheBlk *blk = nullptr;
     PacketList writebacks;
@@ -1654,6 +1672,22 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     // Get address
     const Addr addr = pkt->getAddr();
 
+    if (!pkt->isWriteback() && !pkt->isCleanEviction())
+    {
+        std::string pName = name();
+        // AM.A check history
+        int pr = tags->getHistoryBlock(addr);
+        if (pName.compare("system.l2A") == 0 && pr != 0) {
+            return nullptr;
+        } else if (pName.compare("system.l2B") == 0 && pr != 1) {
+            return nullptr;
+        } else if (pName.compare("system.l2C") == 0 && pr != 2) {
+            return nullptr;
+        } else if (pName.compare("system.l2D") == 0 && pr != 3) {
+            return nullptr;
+        }
+    }
+
     // Get secure bit
     const bool is_secure = pkt->isSecure();
 
@@ -1733,6 +1767,15 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     if (pkt) {
         writebacks.push_back(pkt);
     }
+    std::string pName = name();
+    if (pName.compare("system.l2A") == 0)
+        tags->addHistoryBlock(regenerateBlkAddr(blk), 0);
+    if (pName.compare("system.l2B") == 0)
+        tags->addHistoryBlock(regenerateBlkAddr(blk), 1);
+    if (pName.compare("system.l2C") == 0)
+        tags->addHistoryBlock(regenerateBlkAddr(blk), 2);
+    if (pName.compare("system.l2D") == 0)
+        tags->addHistoryBlock(regenerateBlkAddr(blk), 3);
 }
 
 PacketPtr

@@ -67,6 +67,20 @@ class System;
 class IndexingPolicy;
 class ReplaceableEntry;
 
+class HistoryBlock
+{
+  public:
+    Addr blkAddr;
+    int p0 = 0;
+    int p1 = 0;
+    int p2 = 0;
+    int p3 = 0;
+    int p4 = 0;
+    int p5 = 0;
+    int p6 = 0;
+    int p7 = 0;
+};
+
 /**
  * A common base class of Cache tagstore objects.
  */
@@ -101,6 +115,7 @@ class BaseTags : public ClockedObject
 
     /** The data blocks, 1 per cache block. */
     std::unique_ptr<uint8_t[]> dataBlks;
+    std::vector<HistoryBlock> historyBlocks;
 
     /**
      * TODO: It would be good if these stats were acquired after warmup.
@@ -160,6 +175,14 @@ class BaseTags : public ClockedObject
   public:
     typedef BaseTagsParams Params;
     BaseTags(const Params &p);
+
+    /**
+     *  Return history of that addr (if addr is new return 0)
+     *
+     */
+    HistoryBlock findHistoryBlock(Addr addr);
+    int getHistoryBlock(Addr addr);
+    void addHistoryBlock(Addr addr, int part);
 
     /**
      * Destructor.

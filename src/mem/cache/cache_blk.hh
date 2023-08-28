@@ -108,6 +108,20 @@ class CacheBlk : public TaggedEntry
      */
     Tick whenReady = 0;
 
+    /**
+     * EB flag show the latest part for access (left => 0, right => 1)
+     *
+     */
+    uint8_t EB = 0;
+
+    /**
+     * drL and drR flag show the dirty state.
+     * if write access on left part drL set to 1
+     * if write access on right part drR set to 1
+     */
+    uint8_t drL = 0;
+    uint8_t drR = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on
