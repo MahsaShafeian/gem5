@@ -491,6 +491,7 @@ void
 BaseCache::recvTimingResp(PacketPtr pkt)
 {
     assert(pkt->isResponse());
+    // DPRINTF(FatAndThin, "%s: packet %s\n", __func__, pkt->print());
 
     // all header delay should be paid for by the crossbar, unless
     // this is a prefetch response from above
@@ -558,14 +559,18 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         DPRINTF(FatAndThin, "Block for addr %#llx being updated in Cache\n",
                 pkt->getAddr());
 
+        // AM.A we dont stor some data: if this data evicted from different
+        // part of L2 cache, or this pkt come from other part of L2 cache.
         std::string pName = name();
+        std::cout << "get History block\n";
         int pr = tags->getHistoryBlock(pkt->getAddr());
+        bool isHit = pkt->isHit();
         bool storing = true;
-        if (pName.compare("system.l2A") == 0 && pr != 0) {
+        if ((pName.compare("system.l2A") == 0 && pr != 0) && !isHit) {
             storing = false;
-        } else if (pName.compare("system.l2B") == 0 && pr != 1) {
+        } else if ((pName.compare("system.l2B") == 0 && pr != 1) && !isHit) {
             storing = false;
-        } else if (pName.compare("system.l2C") == 0 && pr != 2) {
+        } else if ((pName.compare("system.l2C") == 0 && pr != 2) && !isHit) {
             storing = false;
         } else if (pName.compare("system.l2D") == 0 && pr != 3) {
             storing = false;
@@ -574,6 +579,7 @@ BaseCache::recvTimingResp(PacketPtr pkt)
             const bool allocate = (writeAllocator && mshr->wasWholeLineWrite) ?
                 writeAllocator->allocate() : mshr->allocOnFill();
             blk = handleFill(pkt, blk, writebacks, allocate);
+            pkt->setIsHit();
             assert(blk != nullptr);
             ppFill->notify(pkt);
         }
@@ -1763,11 +1769,12 @@ BaseCache::invalidateBlock(CacheBlk *blk)
 void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
+    std::cout << "evict "  << blk->print() << "\n";
     PacketPtr pkt = evictBlock(blk);
-    if (pkt) {
+    std::string pName = name();
+    if (pName.compare("system.l2D") != 0) {
         writebacks.push_back(pkt);
     }
-    std::string pName = name();
     if (pName.compare("system.l2A") == 0)
         tags->addHistoryBlock(regenerateBlkAddr(blk), 0);
     if (pName.compare("system.l2B") == 0)

@@ -360,7 +360,10 @@ class Packet : public Printable, public Extensible<Packet>
 
         // Signal block present to squash prefetch and cache evict packets
         // through express snoop flag
-        BLOCK_CACHED          = 0x00010000
+        BLOCK_CACHED          = 0x00010000,
+
+        // bit for check this data come from L2 cache or Other place
+        IS_HIT                = 0x00100000
     };
 
     Flags flags;
@@ -740,6 +743,17 @@ class Packet : public Printable, public Extensible<Packet>
     }
     void clearWriteThrough() { flags.clear(WRITE_THROUGH); }
     bool writeThrough() const { return flags.isSet(WRITE_THROUGH); }
+
+    /**
+     * this function is for set hit in cache
+     *
+     */
+    void setIsHit()
+    {
+        flags.set(IS_HIT);
+    }
+    void clearIsHit() { flags.clear(IS_HIT); }
+    bool isHit() const { return flags.isSet(IS_HIT); }
 
     /**
      * Set when a request hits in a cache and the cache is not going
