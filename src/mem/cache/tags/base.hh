@@ -183,7 +183,6 @@ class BaseTags : public ClockedObject
     HistoryBlock findHistoryBlock(Addr addr);
     int getHistoryBlock(Addr addr);
     void addHistoryBlock(Addr addr, int part);
-    std::string Print(HistoryBlock his);
 
     /**
      * Destructor.

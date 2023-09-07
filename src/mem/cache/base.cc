@@ -1769,7 +1769,6 @@ BaseCache::invalidateBlock(CacheBlk *blk)
 void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
-    std::cout << "evict "  << blk->print() << "\n";
     PacketPtr pkt = evictBlock(blk);
     std::string pName = name();
     if (pName.compare("system.l2D") != 0 || pkt) {

@@ -188,54 +188,23 @@ BaseTags::computeStatsVisitor(CacheBlk &blk)
     }
 }
 
-std::string
-BaseTags::Print(HistoryBlock his)
-{
-    std::cout << "print\n";
-    std::string str;
-
-    if (his.blkAddr)
-    {
-        str = "null his";
-    } else {
-        str = "Addr[";
-        str.append((char *)his.blkAddr);
-        str.append("], > ");
-        str.append((char *)his.p0);
-        str.append((char *)his.p1);
-        str.append((char *)his.p2);
-        str.append((char *)his.p3);
-        str.append((char *)his.p4);
-        str.append((char *)his.p5);
-        str.append((char *)his.p6);
-        str.append((char *)his.p7);
-    }
-
-    return str;
-}
-
 HistoryBlock
 BaseTags::findHistoryBlock(Addr addr)
 {
-    // std::cout << "coming addr:[" << std::hex << addr << "]\n";
     for (const auto& historyB : historyBlocks) {
-        // std::cout << "check history " << Print(historyB) << "\n";
         if (historyB.blkAddr == addr)
         {
-            // std::cout << "fined block history " << Print(historyB) << "\n";
             return historyB;
         }
     }
     HistoryBlock nullHis;
     nullHis.blkAddr = 0;
-    // std::cout << "null block history\n";
     return nullHis;
 }
 
 int
 BaseTags::getHistoryBlock(Addr addr)
 {
-    std::cout << "get history \n";
     int pr = 0;
     Addr PAddr = ((addr >> 8) << 8);
     HistoryBlock historyB = findHistoryBlock(PAddr);
@@ -274,7 +243,6 @@ BaseTags::getHistoryBlock(Addr addr)
             }
         }
     }
-    std::cout << "get history for " << Print(historyB) << "\n";
     return pr;
 }
 
@@ -320,7 +288,6 @@ BaseTags::addHistoryBlock(Addr addr, int part)
             default:
                 break;
             }
-    // std::cout << "add history for " << Print(his) << "\n";
     historyBlocks.push_back(his);
 }
 
