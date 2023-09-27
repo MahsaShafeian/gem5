@@ -131,7 +131,14 @@ def config_cache(options, system):
         fatal("When elastic trace is enabled, do not configure L2 caches.")
 
     if options.l2cache:
-        if options.l2A_size:
+        if not options.l2_size != "0kB":
+            print(
+                f"""create 4 part of cache! A:
+                        {_get_cache_opts("l2A", options)},
+                        B:{_get_cache_opts("l2B", options)},
+                        C:{_get_cache_opts("l2C", options)},
+                        D:{_get_cache_opts("l2D", options)}"""
+            )
             # Provide a clock for the L2 and the L1-to-L2 bus here as they
             # are not connected using addTwoLevelCacheHierarchy. Use the
             # same clock as the CPUs.
@@ -142,36 +149,58 @@ def config_cache(options, system):
             system.tol2Cbus = L2XBar(clk_domain=system.cpu_clk_domain)
             system.tol2Dbus = L2XBar(clk_domain=system.cpu_clk_domain)
 
-            #AM.A create 4 cache level in L2 (l2A, l2B, l2C, l2D)
+            # AM.A create 4 cache level in L2 (l2A, l2B, l2C, l2D)
             system.l2A = l2_cache_class(
-                clk_domain=system.cpu_clk_domain, **_get_cache_opts("l2A", options)
+                clk_domain=system.cpu_clk_domain,
+                **_get_cache_opts("l2A", options),
             )
             system.l2B = l2_cache_class(
-                clk_domain=system.cpu_clk_domain, **_get_cache_opts("l2B", options)
+                clk_domain=system.cpu_clk_domain,
+                **_get_cache_opts("l2B", options),
             )
             system.l2C = l2_cache_class(
-                clk_domain=system.cpu_clk_domain, **_get_cache_opts("l2C", options)
+                clk_domain=system.cpu_clk_domain,
+                **_get_cache_opts("l2C", options),
             )
             system.l2D = l2_cache_class(
-                clk_domain=system.cpu_clk_domain, **_get_cache_opts("l2D", options)
+                clk_domain=system.cpu_clk_domain,
+                **_get_cache_opts("l2D", options),
             )
 
-            #AM.A connect All port of inter connect
-            system.l2A.cpu_side = system.tol2bus.mem_side_ports     # tol2bus.mem_side <-> l2A.cpu_side
-            system.l2A.mem_side = system.tol2Bbus.cpu_side_ports    # tol2Abus.cpu_side <-> l2A.mem_side
+            # AM.A connect All port of inter connect
+            system.l2A.cpu_side = (
+                system.tol2bus.mem_side_ports
+            )  # tol2bus.mem_side <-> l2A.cpu_side
+            system.l2A.mem_side = (
+                system.tol2Bbus.cpu_side_ports
+            )  # tol2Abus.cpu_side <-> l2A.mem_side
 
-            system.l2B.cpu_side = system.tol2Bbus.mem_side_ports    # tol2Bbus.mem_side <-> l2B.cpu_side
-            system.l2B.mem_side = system.tol2Cbus.cpu_side_ports    # tol2Cbus.cpu_side <-> l2B.mem_side
+            system.l2B.cpu_side = (
+                system.tol2Bbus.mem_side_ports
+            )  # tol2Bbus.mem_side <-> l2B.cpu_side
+            system.l2B.mem_side = (
+                system.tol2Cbus.cpu_side_ports
+            )  # tol2Cbus.cpu_side <-> l2B.mem_side
 
-            system.l2C.cpu_side = system.tol2Cbus.mem_side_ports    # tol2Cbus.mem_side <-> l2C.cpu_side
-            system.l2C.mem_side = system.tol2Dbus.cpu_side_ports    # tol2Dbus.cpu_side <-> l2C.mem_side
+            system.l2C.cpu_side = (
+                system.tol2Cbus.mem_side_ports
+            )  # tol2Cbus.mem_side <-> l2C.cpu_side
+            system.l2C.mem_side = (
+                system.tol2Dbus.cpu_side_ports
+            )  # tol2Dbus.cpu_side <-> l2C.mem_side
 
-            system.l2D.cpu_side = system.tol2Dbus.mem_side_ports    # tol2Dbus.mem_side <-> l2D.cpu_side
-            system.l2D.mem_side = system.membus.cpu_side_ports      # membus.cpu_side <-> l2D.mem_side
+            system.l2D.cpu_side = (
+                system.tol2Dbus.mem_side_ports
+            )  # tol2Dbus.mem_side <-> l2D.cpu_side
+            system.l2D.mem_side = (
+                system.membus.cpu_side_ports
+            )  # membus.cpu_side <-> l2D.mem_side
         else:
+            print("create normal cache")
             system.tol2bus = L2XBar(clk_domain=system.cpu_clk_domain)
             system.l2 = l2_cache_class(
-                clk_domain=system.cpu_clk_domain, **_get_cache_opts("l2", options)
+                clk_domain=system.cpu_clk_domain,
+                **_get_cache_opts("l2", options),
             )
 
             system.tol2bus = L2XBar(clk_domain=system.cpu_clk_domain)
