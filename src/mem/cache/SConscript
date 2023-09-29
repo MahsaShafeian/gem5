@@ -52,6 +52,7 @@ DebugFlag('MSHR')
 DebugFlag('HWPrefetchQueue')
 # AM.A add a flag for print data for Rat and Thin paper
 DebugFlag('FatAndThin')
+DebugFlag('none')
 
 # CacheTags is so outrageously verbose, printing the cache's entire tag
 # array on each timing access, that you should probably have to ask for
