@@ -120,7 +120,19 @@ NoncoherentCache::handleTimingReqMiss(PacketPtr pkt, CacheBlk *blk,
                                       Tick forward_time, Tick request_time)
 {
     // miss
-    Addr blk_addr = pkt->getBlockAddr(blkSize);
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
     MSHR *mshr = mshrQueue.findMatch(blk_addr, pkt->isSecure(), false);
 
     // We can always write to a non coherent cache if the block is
@@ -158,7 +170,20 @@ NoncoherentCache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
     PacketPtr pkt = new Packet(cpu_pkt->req, MemCmd::ReadReq, blkSize);
 
     // the packet should be block aligned
-    assert(pkt->getAddr() == pkt->getBlockAddr(blkSize));
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
+    assert(pkt->getAddr() == blk_addr);
 
     pkt->allocate();
     DPRINTF(Cache, "%s created %s from %s\n", __func__, pkt->print(),
