@@ -379,6 +379,11 @@ class Packet : public Printable, public Extensible<Packet>
     /// A pointer to the original request.
     RequestPtr req;
 
+    /// pkt history
+    int16_t history;
+
+    uint8_t accRL = 0;
+
   private:
    /**
     * A pointer to the data being transferred. It can be different
@@ -819,6 +824,10 @@ class Packet : public Printable, public Extensible<Packet>
     void copyError(Packet *pkt) { assert(pkt->isError()); cmd = pkt->cmd; }
 
     Addr getAddr() const { assert(flags.isSet(VALID_ADDR)); return addr; }
+
+    void resetAddr() {
+        addr = (addr >> 8) << 8;
+    }
     /**
      * Update the address of this packet mid-transaction. This is used
      * by the address mapper to change an already set address to a new
@@ -1550,6 +1559,25 @@ class Packet : public Printable, public Extensible<Packet>
      * failed transaction, this function returns the failure reason.
      */
     HtmCacheFailure getHtmTransactionFailedInCacheRC() const;
+
+    /**
+     * @brief Get the Acc R L object
+     *
+     * @return uint8_t
+     */
+    uint8_t getAccRL() {
+        return accRL;
+    }
+
+    /**
+     * @brief Set the Acc R L object
+     *
+     * @param LorR
+     */
+    void updateAddr(uint8_t LorR) {
+        if (LorR != 0)
+            addr = addr | (1 << LorR);
+    }
 };
 
 } // namespace gem5

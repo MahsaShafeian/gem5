@@ -121,6 +121,23 @@ class CacheBlk : public TaggedEntry
      */
     uint8_t drL = 0;
     uint8_t drR = 0;
+    /**
+     * accRL show the access part in last access
+     * if 0 R or 1 L
+     */
+    uint8_t accRL = 0;
+
+    /**
+     * stor history for evict from where
+     *
+     */
+    uint8_t hisPlace;
+
+    /**
+     *
+     *
+     */
+    Addr history;
 
   protected:
     /**
@@ -463,6 +480,60 @@ class CacheBlk : public TaggedEntry
             clearLoadLocks(req);
             return true;
         }
+    }
+
+    /**
+     * @brief this function update the history of this blk
+     *
+     * @param L2X (L2A = 0, L2B = 1, L2C = 2 and L2D = 3)
+     */
+    void updateHistory(int L2X) {
+        uint32_t _set = this->getSet();
+        Addr _tag = this->getTag();
+        Addr _addr = 0;
+        // AM.A TODO: regenerate address
+        if (L2X == 0)
+            _addr = ((_tag >> 0) << 14) | (_set << 8);
+        else if (L2X == 1)
+            _addr = (((_tag >> 1) << 14) | (((_tag & 1)) << 7)) | (_set << 8);
+        else if (L2X == 2)
+            _addr = (((_tag >> 2) << 14) | (((_tag & 3)) << 6)) | (_set << 8);
+        else if (L2X == 3)
+            _addr = (((_tag >> 3) << 14) | (((_tag & 7)) << 5)) | (_set << 8);
+
+        Addr upHis = (((1 << ((~(_addr >> 5) & 7) << 1)) - 1) <<
+                        (((_addr >> 5) & 7) << 1)) +
+                        ((1 << (((_addr >> 5) & 7) << 1)) - 1);
+
+        upHis = upHis | (L2X << (((_addr >> 5) & 7) << 1));
+        // history = history & upHis;
+    }
+
+    /**
+     * @brief Set the Access Bit object
+     *
+     * @param addr address of access req
+     * @param pName part of cache (system.l2A, system.l2AB, ...)
+     */
+    void setAccessBit(Addr addr, std::string pName) {
+        if (pName.compare("system.l2A") == 0) {
+            accRL = ((addr >> 7) & 1) == 1 ? 7 : 0;
+        } else if (pName.compare("system.l2B") == 0) {
+            accRL = ((addr >> 7) & 1) == 1 ? 6 : 0;
+        } else if (pName.compare("system.l2C") == 0) {
+            accRL = ((addr >> 7) & 1) == 1 ? 5 : 0;
+        } else if (pName.compare("system.l2D") == 0) {
+            accRL = ((addr >> 7) & 1) == 1 ? 4 : 0;
+        }
+    }
+
+    /**
+     * @brief Get the Access Bit object
+     *
+     * @return uint8_t
+     */
+    uint8_t getAccessBit() {
+        return accRL;
     }
 
   protected:

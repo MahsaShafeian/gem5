@@ -351,8 +351,19 @@ Cache::handleTimingReqMiss(PacketPtr pkt, CacheBlk *blk, Tick forward_time,
 
         return;
     }
-
-    Addr blk_addr = pkt->getBlockAddr(blkSize);
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
 
     MSHR *mshr = mshrQueue.findMatch(blk_addr, pkt->isSecure());
 
@@ -553,7 +564,20 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
     }
 
     // the packet should be block aligned
-    assert(pkt->getAddr() == pkt->getBlockAddr(blkSize));
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
+    assert(pkt->getAddr() == blk_addr);
 
     pkt->allocate();
     DPRINTF(Cache, "%s: created %s from %s\n", __func__, pkt->print(),
@@ -951,6 +975,7 @@ Cache::evictBlock(CacheBlk *blk)
     PacketPtr pkt = (blk->isSet(CacheBlk::DirtyBit) || writebackClean) ?
         writebackBlk(blk) : cleanEvictBlk(blk);
 
+    pkt->updateAddr(blk->getAccessBit());
     invalidateBlock(blk);
 
     return pkt;
@@ -1258,7 +1283,19 @@ Cache::recvTimingSnoopReq(PacketPtr pkt)
     bool is_secure = pkt->isSecure();
     CacheBlk *blk = tags->findBlock(pkt->getAddr(), is_secure);
 
-    Addr blk_addr = pkt->getBlockAddr(blkSize);
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
     MSHR *mshr = mshrQueue.findMatch(blk_addr, is_secure);
 
     // Update the latency cost of the snoop so that the crossbar can
