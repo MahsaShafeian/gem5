@@ -229,7 +229,20 @@ BaseCache::handleTimingReqHit(PacketPtr pkt, CacheBlk *blk, Tick request_time)
 
     // handle special cases for LockedRMW transactions
     if (pkt->isLockedRMW()) {
-        Addr blk_addr = pkt->getBlockAddr(blkSize);
+        // AM.A TODO: blk_addr is not corect in this place
+        std::string pName = name();
+        Addr blk_addr = 0;
+        if (pName.compare("system.l2A") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        } else if (pName.compare("system.l2B") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 2);
+        } else if (pName.compare("system.l2C") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 4);
+        } else if (pName.compare("system.l2D") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 8);
+        } else {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        }
 
         if (pkt->isRead()) {
             // Read hit for LockedRMW.  Since it requires exclusive
@@ -310,8 +323,21 @@ BaseCache::handleTimingReqMiss(PacketPtr pkt, MSHR *mshr, CacheBlk *blk,
 {
     if (writeAllocator &&
         pkt && pkt->isWrite() && !pkt->req->isUncacheable()) {
+        std::string pName = name();
+        Addr blk_addr = 0;
+        if (pName.compare("system.l2A") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        } else if (pName.compare("system.l2B") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 2);
+        } else if (pName.compare("system.l2C") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 4);
+        } else if (pName.compare("system.l2D") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 8);
+        } else {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        }
         writeAllocator->updateMode(pkt->getAddr(), pkt->getSize(),
-                                   pkt->getBlockAddr(blkSize));
+                                   blk_addr);
     }
 
     if (mshr) {
@@ -562,8 +588,7 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         // AM.A we dont stor some data: if this data evicted from different
         // part of L2 cache, or this pkt come from other part of L2 cache.
         std::string pName = name();
-        std::cout << "get History block\n";
-        int pr = tags->getHistoryBlock(pkt->getAddr());
+        int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
         bool isHit = pkt->isHit();
         bool storing = true;
         if ((pName.compare("system.l2A") == 0 && pr != 0) && !isHit) {
@@ -740,7 +765,19 @@ BaseCache::recvAtomic(PacketPtr pkt)
 void
 BaseCache::functionalAccess(PacketPtr pkt, bool from_cpu_side)
 {
-    Addr blk_addr = pkt->getBlockAddr(blkSize);
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
     bool is_secure = pkt->isSecure();
     CacheBlk *blk = tags->findBlock(pkt->getAddr(), is_secure);
     MSHR *mshr = mshrQueue.findMatch(blk_addr, is_secure);
@@ -928,7 +965,19 @@ BaseCache::getNextQueueEntry()
         // If we have a miss queue slot, we can try a prefetch
         PacketPtr pkt = prefetcher->getPacket();
         if (pkt) {
-            Addr pf_addr = pkt->getBlockAddr(blkSize);
+            std::string pName = name();
+            Addr pf_addr = 0;
+            if (pName.compare("system.l2A") == 0) {
+                pf_addr = pkt->getBlockAddr(blkSize);
+            } else if (pName.compare("system.l2B") == 0) {
+                pf_addr = pkt->getBlockAddr(blkSize / 2);
+            } else if (pName.compare("system.l2C") == 0) {
+                pf_addr = pkt->getBlockAddr(blkSize / 4);
+            } else if (pName.compare("system.l2D") == 0) {
+                pf_addr = pkt->getBlockAddr(blkSize / 8);
+            } else {
+                pf_addr = pkt->getBlockAddr(blkSize);
+            }
             if (tags->findBlock(pf_addr, pkt->isSecure())) {
                 DPRINTF(HWPrefetch, "Prefetch %#x has hit in cache, "
                         "dropped.\n", pf_addr);
@@ -1269,6 +1318,8 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // Access block in the tags
     Cycles tag_latency(0);
     blk = tags->accessBlock(pkt, tag_latency);
+    if (blk)
+        blk->setAccessBit(pkt->getAddr(), name());
 
     DPRINTF(FatAndThin, "%s for %s %s\n", __func__, pkt->print(),
             blk ? "hit " + blk->print() : "miss XD");
@@ -1587,7 +1638,20 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     const std::string old_state = (debug::Cache && blk) ? blk->print() : "";
 
     // When handling a fill, we should have no writes to this line.
-    assert(addr == pkt->getBlockAddr(blkSize));
+    std::string pName = name();
+    Addr blk_addr = 0;
+    if (pName.compare("system.l2A") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    } else if (pName.compare("system.l2B") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 2);
+    } else if (pName.compare("system.l2C") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 4);
+    } else if (pName.compare("system.l2D") == 0) {
+        blk_addr = pkt->getBlockAddr(blkSize / 8);
+    } else {
+        blk_addr = pkt->getBlockAddr(blkSize);
+    }
+    assert(addr == blk_addr);
     assert(!writeBuffer.findMatch(addr, is_secure));
 
     if (!blk) {
@@ -1682,7 +1746,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     {
         std::string pName = name();
         // AM.A check history
-        int pr = tags->getHistoryBlock(addr);
+        int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
         if (pName.compare("system.l2A") == 0 && pr != 0) {
             return nullptr;
         } else if (pName.compare("system.l2B") == 0 && pr != 1) {
@@ -1769,19 +1833,27 @@ BaseCache::invalidateBlock(CacheBlk *blk)
 void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
-    PacketPtr pkt = evictBlock(blk);
+    // AM.A TODO: update save history block pattern.
     std::string pName = name();
-    if (pName.compare("system.l2D") != 0 || pkt) {
+    if (pName.compare("system.l2A") == 0)
+        blk->updateHistory(0);
+    if (pName.compare("system.l2B") == 0)
+        blk->updateHistory(1);
+    if (pName.compare("system.l2C") == 0)
+        blk->updateHistory(2);
+    if (pName.compare("system.l2D") == 0)
+        blk->updateHistory(3);
+
+    PacketPtr pkt = evictBlock(blk);
+
+    if (pName.compare("system.l2D") == 0) {
+        pkt->resetAddr();
+    }
+
+    // AM.A set to push back all evict to stor all history.
+    if (pName.compare("system.l2E") != 0 || pkt) {
         writebacks.push_back(pkt);
     }
-    if (pName.compare("system.l2A") == 0)
-        tags->addHistoryBlock(regenerateBlkAddr(blk), 0);
-    if (pName.compare("system.l2B") == 0)
-        tags->addHistoryBlock(regenerateBlkAddr(blk), 1);
-    if (pName.compare("system.l2C") == 0)
-        tags->addHistoryBlock(regenerateBlkAddr(blk), 2);
-    if (pName.compare("system.l2D") == 0)
-        tags->addHistoryBlock(regenerateBlkAddr(blk), 3);
 }
 
 PacketPtr
@@ -1824,6 +1896,7 @@ BaseCache::writebackBlk(CacheBlk *blk)
 
     pkt->allocate();
     pkt->setDataFromBlock(blk->data, blkSize);
+    pkt->history = blk->hisPlace;
 
     // When a block is compressed, it must first be decompressed before being
     // sent for writeback.

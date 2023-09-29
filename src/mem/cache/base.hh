@@ -1168,7 +1168,20 @@ class BaseCache : public ClockedObject
 
     MSHR *allocateMissBuffer(PacketPtr pkt, Tick time, bool sched_send = true)
     {
-        MSHR *mshr = mshrQueue.allocate(pkt->getBlockAddr(blkSize), blkSize,
+        std::string pName = name();
+        Addr blk_addr = 0;
+        if (pName.compare("system.l2A") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        } else if (pName.compare("system.l2B") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 2);
+        } else if (pName.compare("system.l2C") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 4);
+        } else if (pName.compare("system.l2D") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 8);
+        } else {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        }
+        MSHR *mshr = mshrQueue.allocate(blk_addr, blkSize,
                                         pkt, time, order++,
                                         allocOnFill(pkt->cmd));
 
@@ -1186,10 +1199,22 @@ class BaseCache : public ClockedObject
 
     void allocateWriteBuffer(PacketPtr pkt, Tick time)
     {
+        // AM.A in this place should add write back
         // should only see writes or clean evicts here
         assert(pkt->isWrite() || pkt->cmd == MemCmd::CleanEvict);
-
-        Addr blk_addr = pkt->getBlockAddr(blkSize);
+        std::string pName = name();
+        Addr blk_addr = 0;
+        if (pName.compare("system.l2A") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        } else if (pName.compare("system.l2B") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 2);
+        } else if (pName.compare("system.l2C") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 4);
+        } else if (pName.compare("system.l2D") == 0) {
+            blk_addr = pkt->getBlockAddr(blkSize / 8);
+        } else {
+            blk_addr = pkt->getBlockAddr(blkSize);
+        }
 
         // If using compression, on evictions the block is decompressed and
         // the operation's latency is added to the payload delay. Consume
