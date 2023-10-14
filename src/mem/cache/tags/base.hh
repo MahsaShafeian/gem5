@@ -221,6 +221,10 @@ class BaseTags : public ClockedObject
      */
     virtual CacheBlk *findBlock(Addr addr, bool is_secure) const;
 
+    virtual CacheBlk *findBlockBySubTag(Addr subTag,
+                                        uint32_t set,
+                                        bool is_secure) const;
+
     /**
      * Find a block given set and way.
      *

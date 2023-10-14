@@ -492,21 +492,23 @@ class CacheBlk : public TaggedEntry
         Addr _tag = this->getTag();
         Addr _addr = 0;
         // AM.A TODO: regenerate address
-        if (L2X == 0)
+        if (L2X == 0) {
             _addr = ((_tag >> 0) << 14) | (_set << 8);
-        else if (L2X == 1)
+        } else if (L2X == 1) {
             _addr = (((_tag >> 1) << 14) | (((_tag & 1)) << 7)) | (_set << 8);
-        else if (L2X == 2)
+        } else if (L2X == 2) {
             _addr = (((_tag >> 2) << 14) | (((_tag & 3)) << 6)) | (_set << 8);
-        else if (L2X == 3)
+        } else if (L2X == 3) {
             _addr = (((_tag >> 3) << 14) | (((_tag & 7)) << 5)) | (_set << 8);
+        }
 
         Addr upHis = (((1 << ((~(_addr >> 5) & 7) << 1)) - 1) <<
                         (((_addr >> 5) & 7) << 1)) +
                         ((1 << (((_addr >> 5) & 7) << 1)) - 1);
 
+        upHis = history & upHis;
         upHis = upHis | (L2X << (((_addr >> 5) & 7) << 1));
-        // history = history & upHis;
+        history = upHis;
     }
 
     /**

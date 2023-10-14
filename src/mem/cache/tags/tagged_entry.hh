@@ -83,6 +83,13 @@ class TaggedEntry : public ReplaceableEntry
         return isValid() && (getTag() == tag) && (isSecure() == is_secure);
     }
 
+    virtual bool
+    matchSubTag(Addr tag, bool is_secure, uint32_t shift) const
+    {
+        return isValid() && ((getTag() >> shift) == tag)
+                && (isSecure() == is_secure);
+    }
+
     /**
      * Insert the block by assigning it a tag and marking it valid. Touches
      * block if it hadn't been touched previously.

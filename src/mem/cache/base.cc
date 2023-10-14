@@ -486,7 +486,8 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 
         handleTimingReqHit(pkt, blk, request_time);
     } else {
-        handleTimingReqMiss(pkt, blk, forward_time, request_time);
+        if (!pkt->isCleanEviction())
+            handleTimingReqMiss(pkt, blk, forward_time, request_time);
 
         ppMiss->notify(pkt);
     }
@@ -588,7 +589,8 @@ BaseCache::recvTimingResp(PacketPtr pkt)
         // AM.A we dont stor some data: if this data evicted from different
         // part of L2 cache, or this pkt come from other part of L2 cache.
         std::string pName = name();
-        int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
+        // int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
+        int pr = pkt->destinaion;
         bool isHit = pkt->isHit();
         bool storing = true;
         if ((pName.compare("system.l2A") == 0 && pr != 0) && !isHit) {
@@ -607,6 +609,8 @@ BaseCache::recvTimingResp(PacketPtr pkt)
             pkt->setIsHit();
             assert(blk != nullptr);
             ppFill->notify(pkt);
+        } else {
+            evictOverLapBlocks(pkt);
         }
     }
 
@@ -1746,7 +1750,8 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     {
         std::string pName = name();
         // AM.A check history
-        int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
+        // int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
+        int pr = pkt->destinaion;
         if (pName.compare("system.l2A") == 0 && pr != 0) {
             return nullptr;
         } else if (pName.compare("system.l2B") == 0 && pr != 1) {
@@ -1856,6 +1861,26 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     }
 }
 
+void
+BaseCache::evictOverLapBlocks(Packet *pkt) {
+    // AM.A for all blk in the tags[set] that have same overlap whit
+    // subTag need to evict
+    CacheBlk *blk = tags->findBlockBySubTag(pkt->getAddr() >> 14,
+                                            (pkt->getAddr() >> 8) & 31,
+                                            pkt->isSecure());
+    if (blk) {
+        // std::cout << "Overlap blk:" << blk->print() << std::endl;
+        PacketPtr pkt = evictBlock(blk);
+
+        if (pkt) {
+            PacketList writebacks;
+            writebacks.push_back(pkt);
+            doWritebacks(writebacks, 0);
+        }
+    }
+
+}
+
 PacketPtr
 BaseCache::writebackBlk(CacheBlk *blk)
 {
@@ -1896,7 +1921,7 @@ BaseCache::writebackBlk(CacheBlk *blk)
 
     pkt->allocate();
     pkt->setDataFromBlock(blk->data, blkSize);
-    pkt->history = blk->hisPlace;
+    pkt->history = blk->history;
 
     // When a block is compressed, it must first be decompressed before being
     // sent for writeback.

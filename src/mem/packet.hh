@@ -381,6 +381,7 @@ class Packet : public Printable, public Extensible<Packet>
 
     /// pkt history
     int16_t history;
+    int8_t destinaion = 0;
 
     uint8_t accRL = 0;
 

@@ -101,6 +101,32 @@ BaseTags::findBlock(Addr addr, bool is_secure) const
     return nullptr;
 }
 
+CacheBlk*
+BaseTags::findBlockBySubTag(Addr subTag, uint32_t set, bool is_secure) const
+{
+    uint32_t shift = 0;
+    std::string pName = name();
+    if (pName.compare("system.l2A.tags")) {
+        shift = 0;
+    } else if (pName.compare("system.l2B.tags")) {
+        shift = 1;
+    } else if (pName.compare("system.l2C.tags")) {
+        shift = 2;
+    } else if (pName.compare("system.l2D.tags")) {
+        shift = 3;
+    }
+    for (int i = 0; i < 8; i++)
+    {
+        CacheBlk *blk = static_cast<CacheBlk*>
+                        (findBlockBySetAndWay(set, i));
+        if ((blk->getTag() >> shift) == subTag) {
+            // std::cout << name() << " -> " << blk->print() << std::endl;
+            return blk;
+        }
+    }
+    return nullptr;
+}
+
 void
 BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
 {

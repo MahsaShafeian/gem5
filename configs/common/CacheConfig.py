@@ -133,8 +133,8 @@ def config_cache(options, system):
     if options.l2cache:
         if not options.l2_size != "0kB":
             print(
-                f"""create 4 part of cache! A:
-                        {_get_cache_opts("l2A", options)},
+                f"""create 4 part of cache!
+                        A:{_get_cache_opts("l2A", options)},
                         B:{_get_cache_opts("l2B", options)},
                         C:{_get_cache_opts("l2C", options)},
                         D:{_get_cache_opts("l2D", options)}"""

@@ -817,6 +817,14 @@ class BaseCache : public ClockedObject
     void evictBlock(CacheBlk *blk, PacketList &writebacks);
 
     /**
+     * @brief All the block that have over lap whit new req
+     * need to evicted
+     *
+     * @param pkt teh incoming pkt
+     */
+    void evictOverLapBlocks(Packet *pkt);
+
+    /**
      * Invalidate a cache block.
      *
      * @param blk Block to invalidate
@@ -1328,6 +1336,16 @@ class BaseCache : public ClockedObject
     void incHitCount(PacketPtr pkt)
     {
         assert(pkt->req->requestorId() < system->maxRequestors());
+        std::string pName = name();
+        if (pName.compare("system.l2A") == 0) {
+            pkt->destinaion = 0;
+        } else if (pName.compare("system.l2B") == 0) {
+            pkt->destinaion = 1;
+        } else if (pName.compare("system.l2C") == 0) {
+            pkt->destinaion = 2;
+        } else if (pName.compare("system.l2D") == 0) {
+            pkt->destinaion = 3;
+        }
         stats.cmdStats(pkt).hits[pkt->req->requestorId()]++;
     }
 
