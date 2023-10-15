@@ -71,6 +71,7 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
     for (uint32_t i = 0; i < numSets; ++i) {
         sets[i].resize(assoc);
     }
+    numberWay = assoc;
 }
 
 ReplaceableEntry*
@@ -118,6 +119,12 @@ BaseIndexingPolicy::extractTag(const Addr addr) const
     } else {
         return (addr >> tagShift);
     }
+}
+
+unsigned
+BaseIndexingPolicy::getNumberWay()
+{
+    return numberWay;
 }
 
 } // namespace gem5

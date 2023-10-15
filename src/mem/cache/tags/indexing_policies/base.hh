@@ -102,6 +102,8 @@ class BaseIndexingPolicy : public SimObject
      */
     typedef BaseIndexingPolicyParams Params;
 
+    int numberWay;
+
     /**
      * Construct and initialize this policy.
      */
@@ -158,6 +160,9 @@ class BaseIndexingPolicy : public SimObject
      */
     virtual Addr regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
                                                                     const = 0;
+
+    unsigned getNumberWay();
+
 };
 
 } // namespace gem5

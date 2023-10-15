@@ -115,12 +115,12 @@ BaseTags::findBlockBySubTag(Addr subTag, uint32_t set, bool is_secure) const
     } else if (pName.compare("system.l2D.tags")) {
         shift = 3;
     }
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < indexingPolicy->getNumberWay(); i++)
     {
         CacheBlk *blk = static_cast<CacheBlk*>
                         (findBlockBySetAndWay(set, i));
         if ((blk->getTag() >> shift) == subTag) {
-            // std::cout << name() << " -> " << blk->print() << std::endl;
+            std::cout << name() << " -> " << blk->print() << std::endl;
             return blk;
         }
     }

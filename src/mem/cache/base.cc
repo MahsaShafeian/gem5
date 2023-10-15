@@ -1875,7 +1875,7 @@ BaseCache::evictOverLapBlocks(Packet *pkt) {
         if (pkt) {
             PacketList writebacks;
             writebacks.push_back(pkt);
-            doWritebacks(writebacks, 0);
+            doWritebacks(writebacks, 500);
         }
     }
 
