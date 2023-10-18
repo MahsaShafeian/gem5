@@ -486,8 +486,8 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 
         handleTimingReqHit(pkt, blk, request_time);
     } else {
-        if (!pkt->isCleanEviction())
-            handleTimingReqMiss(pkt, blk, forward_time, request_time);
+        // if (!pkt->isCleanEviction())
+        handleTimingReqMiss(pkt, blk, forward_time, request_time);
 
         ppMiss->notify(pkt);
     }
@@ -1746,23 +1746,6 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     // Get address
     const Addr addr = pkt->getAddr();
 
-    if (!pkt->isWriteback() && !pkt->isCleanEviction())
-    {
-        std::string pName = name();
-        // AM.A check history
-        // int pr = (pkt->history >> (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
-        int pr = pkt->destinaion;
-        if (pName.compare("system.l2A") == 0 && pr != 0) {
-            return nullptr;
-        } else if (pName.compare("system.l2B") == 0 && pr != 1) {
-            return nullptr;
-        } else if (pName.compare("system.l2C") == 0 && pr != 2) {
-            return nullptr;
-        } else if (pName.compare("system.l2D") == 0 && pr != 3) {
-            return nullptr;
-        }
-    }
-
     // Get secure bit
     const bool is_secure = pkt->isSecure();
 
@@ -1869,13 +1852,23 @@ BaseCache::evictOverLapBlocks(Packet *pkt) {
                                             (pkt->getAddr() >> 8) & 31,
                                             pkt->isSecure());
     if (blk) {
-        // std::cout << "Overlap blk:" << blk->print() << std::endl;
+        const MSHR* mshr =
+                mshrQueue.findMatch(regenerateBlkAddr(blk),
+                                    blk->isSecure());
+        if (mshr) {
+            // Must be an outstanding upgrade or clean request on a block
+            // we're about to replace
+            assert((!blk->isSet(CacheBlk::WritableBit) &&
+                mshr->needsWritable()) || mshr->isCleaning());
+            return;
+        }
         PacketPtr pkt = evictBlock(blk);
+        pkt->setIsHit();
 
         if (pkt) {
             PacketList writebacks;
             writebacks.push_back(pkt);
-            doWritebacks(writebacks, 500);
+            doWritebacks(writebacks, 0);
         }
     }
 

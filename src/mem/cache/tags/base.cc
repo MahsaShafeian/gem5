@@ -120,7 +120,6 @@ BaseTags::findBlockBySubTag(Addr subTag, uint32_t set, bool is_secure) const
         CacheBlk *blk = static_cast<CacheBlk*>
                         (findBlockBySetAndWay(set, i));
         if ((blk->getTag() >> shift) == subTag) {
-            std::cout << name() << " -> " << blk->print() << std::endl;
             return blk;
         }
     }
