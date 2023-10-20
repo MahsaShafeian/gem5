@@ -40,6 +40,8 @@
 
 #include "mem/abstract_mem.hh"
 
+#include <fstream>
+#include <iostream>
 #include <vector>
 
 #include "base/loader/memory_image.hh"
@@ -379,6 +381,7 @@ tracePacket(System *sys, const char *label, PacketPtr pkt)
 void
 AbstractMemory::access(PacketPtr pkt)
 {
+    // AM.A in this function access to the memory XD.
     if (pkt->cacheResponding()) {
         DPRINTF(MemoryAccess, "Cache responding to %#llx: not responding\n",
                 pkt->getAddr());
@@ -414,6 +417,7 @@ AbstractMemory::access(PacketPtr pkt)
             // memory address into the packet
             pkt->writeData(&overwrite_val[0]);
             pkt->setData(host_addr);
+            pkt->history = pmemHisAddr[pkt->getAddr()];
 
             if (pkt->req->isCondSwap()) {
                 if (pkt->getSize() == sizeof(uint64_t)) {
@@ -428,6 +432,7 @@ AbstractMemory::access(PacketPtr pkt)
                     panic("Invalid size for conditional read/write\n");
             }
 
+            // AM.A in this place overwrite data from pkt to Main memory
             if (overwrite_mem)
                 std::memcpy(host_addr, &overwrite_val[0], pkt->getSize());
 
@@ -437,6 +442,9 @@ AbstractMemory::access(PacketPtr pkt)
         }
     } else if (pkt->isRead()) {
         assert(!pkt->isWrite());
+        pkt->history = pmemHisAddr[pkt->getAddr()];
+        pkt->destinaion = (pkt->history >>
+                            (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
         if (pkt->isLLSC()) {
             assert(!pkt->fromCache());
             // if the packet is not coming from a cache then we have
@@ -466,6 +474,7 @@ AbstractMemory::access(PacketPtr pkt)
             }
             assert(!pkt->req->isInstFetch());
             TRACE_PACKET("Write");
+            pmemHisAddr[pkt->getAddr()] = pkt->history;
             stats.numWrites[pkt->req->requestorId()]++;
             stats.bytesWritten[pkt->req->requestorId()] += pkt->getSize();
         }

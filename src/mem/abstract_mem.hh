@@ -117,6 +117,9 @@ class AbstractMemory : public ClockedObject
     // Pointer to host memory used to implement this memory
     uint8_t* pmemAddr;
 
+    // Pointer to host memory used to implement memory of history
+    int16_t pmemHisAddr[536870912];
+
     // Backdoor to access this memory.
     MemBackdoor backdoor;
 
