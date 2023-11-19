@@ -138,6 +138,7 @@ class CacheBlk : public TaggedEntry
      *
      */
     Addr history;
+    uint8_t useful;
 
   protected:
     /**

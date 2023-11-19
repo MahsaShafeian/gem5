@@ -226,11 +226,19 @@ BaseCache::inRange(Addr addr) const
 void
 BaseCache::handleTimingReqHit(PacketPtr pkt, CacheBlk *blk, Tick request_time)
 {
-
+    std::string pName = name();
+    if (pName.compare("system.l2An") == 0 ||
+        pName.compare("system.l2Bn") == 0 ||
+        pName.compare("system.l2Cn") == 0 ||
+        pName.compare("system.l2D") == 0)
+    {
+        // AM.A set useful to 1
+        // AM.A note: in this place mor than one time called
+        blk->useful = 1;
+    }
     // handle special cases for LockedRMW transactions
     if (pkt->isLockedRMW()) {
-        // AM.A TODO: blk_addr is not corect in this place
-        std::string pName = name();
+        // AM.A TODO: blk_addr is not correct in this place
         Addr blk_addr = 0;
         if (pName.compare("system.l2A") == 0) {
             blk_addr = pkt->getBlockAddr(blkSize);
@@ -431,6 +439,11 @@ BaseCache::handleTimingReqMiss(PacketPtr pkt, MSHR *mshr, CacheBlk *blk,
 void
 BaseCache::recvTimingReq(PacketPtr pkt)
 {
+    std::string pName = name();
+    if (pName.compare("system.cpu.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0) {
+            pkt->OriginAddr = pkt->getAddr();
+    }
     // anything that is merely forwarded pays for the forward latency and
     // the delay provided by the crossbar
     Tick forward_time = clockEdge(forwardLatency) + pkt->headerDelay;
@@ -452,6 +465,17 @@ BaseCache::recvTimingReq(PacketPtr pkt)
     Cycles lat;
     CacheBlk *blk = nullptr;
     bool satisfied = false;
+    int8_t thisPlace = 0;
+    if (pName.compare("system.l2A") == 0) {
+        thisPlace = 0;
+    } else if (pName.compare("system.l2B") == 0) {
+        thisPlace = 1;
+    } else if (pName.compare("system.l2C") == 0) {
+        thisPlace = 2;
+    } else if (pName.compare("system.l2D") == 0) {
+        thisPlace = 3;
+    }
+    if (pkt->destinaion != thisPlace)
     {
         PacketList writebacks;
         // Note that lat is passed by reference here. The function
@@ -692,6 +716,11 @@ BaseCache::recvAtomic(PacketPtr pkt)
     // writebacks... that would mean that someone used an atomic
     // access in timing mode
 
+    std::string pName = name();
+    if (pName.compare("system.cpu.dcache") == 0 ||
+        pName.compare("system.cpu.icache") == 0) {
+            pkt->OriginAddr = pkt->getAddr();
+    }
     // We use lookupLatency here because it is used to specify the latency
     // to access.
     Cycles lat = lookupLatency;
@@ -1839,7 +1868,9 @@ BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
     }
 
     // AM.A set to push back all evict to stor all history.
-    if (pName.compare("system.l2E") != 0 || pkt) {
+    // AM.A TODO: add flag to pkt for bypath down cache part
+    if ((pName.compare("system.l2E") != 0 && blk->useful) || pkt) {
+        pkt->destinaion = 5;
         writebacks.push_back(pkt);
     }
 }
