@@ -381,9 +381,13 @@ class Packet : public Printable, public Extensible<Packet>
 
     /// pkt history
     int16_t history;
+
+    /// @brief target of pkt (L2A, L2B, L2C, L2D, MM)
     int8_t destinaion = 0;
 
     uint8_t accRL = 0;
+
+    Addr OriginAddr;
 
   private:
    /**
