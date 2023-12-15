@@ -444,7 +444,7 @@ AbstractMemory::access(PacketPtr pkt)
         assert(!pkt->isWrite());
         pkt->history = pmemHisAddr[pkt->getAddr()];
         pkt->destinaion = (pkt->history >>
-                            (((pkt->getAddr() >> 5) & 7) << 1)) & 3;
+                            (((pkt->OriginAddr >> 5) & 7) << 1)) & 3;
         if (pkt->isLLSC()) {
             assert(!pkt->fromCache());
             // if the packet is not coming from a cache then we have
