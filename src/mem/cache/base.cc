@@ -465,7 +465,7 @@ BaseCache::recvTimingReq(PacketPtr pkt)
     Cycles lat;
     CacheBlk *blk = nullptr;
     bool satisfied = false;
-    int8_t thisPlace = 0;
+    int8_t thisPlace = -1;
     if (pName.compare("system.l2A") == 0) {
         thisPlace = 0;
     } else if (pName.compare("system.l2B") == 0) {
@@ -486,6 +486,8 @@ BaseCache::recvTimingReq(PacketPtr pkt)
         // to the write buffer to ensure they logically precede anything
         // happening below
         doWritebacks(writebacks, clockEdge(lat + forwardLatency));
+    } else {
+
     }
 
     // Here we charge the headerDelay that takes into account the latencies
@@ -510,8 +512,9 @@ BaseCache::recvTimingReq(PacketPtr pkt)
 
         handleTimingReqHit(pkt, blk, request_time);
     } else {
-        // if (!pkt->isCleanEviction())
-        handleTimingReqMiss(pkt, blk, forward_time, request_time);
+        if (!pkt->isCleanEviction()) {
+            handleTimingReqMiss(pkt, blk, forward_time, request_time);
+        }
 
         ppMiss->notify(pkt);
     }
@@ -1851,25 +1854,35 @@ void
 BaseCache::evictBlock(CacheBlk *blk, PacketList &writebacks)
 {
     // AM.A TODO: update save history block pattern.
+    int destinaion = -1;
     std::string pName = name();
-    if (pName.compare("system.l2A") == 0)
+    if (pName.compare("system.l2A") == 0) {
         blk->updateHistory(0);
-    if (pName.compare("system.l2B") == 0)
+        destinaion = 1;
+    } else if (pName.compare("system.l2B") == 0) {
         blk->updateHistory(1);
-    if (pName.compare("system.l2C") == 0)
+        destinaion = 2;
+    }else if (pName.compare("system.l2C") == 0) {
         blk->updateHistory(2);
-    if (pName.compare("system.l2D") == 0)
+        destinaion = 3;
+    }else if (pName.compare("system.l2D") == 0) {
         blk->updateHistory(3);
 
+    }
     PacketPtr pkt = evictBlock(blk);
 
     if (pName.compare("system.l2D") == 0) {
         pkt->resetAddr();
     }
 
+    // if (blk->useful) {
+    //     pkt->destinaion = destinaion;
+    // } else {
+    //     pkt->destinaion = 0;
+    // }
     // AM.A set to push back all evict to stor all history.
     // AM.A TODO: add flag to pkt for bypath down cache part
-    if ((pName.compare("system.l2E") != 0 && blk->useful) || pkt) {
+    if ((pName.compare("system.l2E") != 0) || pkt) {
         pkt->destinaion = 5;
         writebacks.push_back(pkt);
     }

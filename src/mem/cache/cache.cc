@@ -636,7 +636,19 @@ Cache::handleAtomicReqMiss(PacketPtr pkt, CacheBlk *&blk,
     // in place in the bus_pkt == pkt structure, so we don't need
     // to do anything.  Otherwise, use the separate bus_pkt to
     // generate response to pkt and then delete it.
-    if (!is_forward) {
+    std::string pName = name();
+    int pr = pkt->destinaion;
+    bool storing = true;
+    if (pName.compare("system.l2A") == 0 && pr != 0) {
+        storing = false;
+    } else if (pName.compare("system.l2B") == 0 && pr != 1) {
+        storing = false;
+    } else if (pName.compare("system.l2C") == 0 && pr != 2) {
+        storing = false;
+    } else if (pName.compare("system.l2D") == 0 && pr != 3) {
+        storing = false;
+    }
+    if (!is_forward && storing) {
         if (pkt->needsResponse()) {
             assert(bus_pkt->isResponse());
             if (bus_pkt->isError()) {
