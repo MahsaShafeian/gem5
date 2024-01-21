@@ -351,19 +351,8 @@ Cache::handleTimingReqMiss(PacketPtr pkt, CacheBlk *blk, Tick forward_time,
 
         return;
     }
-    std::string pName = name();
-    Addr blk_addr = 0;
-    if (pName.compare("system.l2A") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    } else if (pName.compare("system.l2B") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 2);
-    } else if (pName.compare("system.l2C") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 4);
-    } else if (pName.compare("system.l2D") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 8);
-    } else {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    }
+
+    Addr blk_addr = pkt->getBlockAddr(blkSize);
 
     MSHR *mshr = mshrQueue.findMatch(blk_addr, pkt->isSecure());
 
@@ -565,20 +554,7 @@ Cache::createMissPacket(PacketPtr cpu_pkt, CacheBlk *blk,
     }
 
     // the packet should be block aligned
-    std::string pName = name();
-    Addr blk_addr = 0;
-    if (pName.compare("system.l2A") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    } else if (pName.compare("system.l2B") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 2);
-    } else if (pName.compare("system.l2C") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 4);
-    } else if (pName.compare("system.l2D") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 8);
-    } else {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    }
-    assert(pkt->getAddr() == blk_addr);
+    assert(pkt->getAddr() == pkt->getBlockAddr(blkSize));
 
     pkt->allocate();
     DPRINTF(Cache, "%s: created %s from %s\n", __func__, pkt->print(),
@@ -636,19 +612,7 @@ Cache::handleAtomicReqMiss(PacketPtr pkt, CacheBlk *&blk,
     // in place in the bus_pkt == pkt structure, so we don't need
     // to do anything.  Otherwise, use the separate bus_pkt to
     // generate response to pkt and then delete it.
-    std::string pName = name();
-    int pr = pkt->destinaion;
-    bool storing = true;
-    if (pName.compare("system.l2A") == 0 && pr != 0) {
-        storing = false;
-    } else if (pName.compare("system.l2B") == 0 && pr != 1) {
-        storing = false;
-    } else if (pName.compare("system.l2C") == 0 && pr != 2) {
-        storing = false;
-    } else if (pName.compare("system.l2D") == 0 && pr != 3) {
-        storing = false;
-    }
-    if (!is_forward && storing) {
+    if (!is_forward) {
         if (pkt->needsResponse()) {
             assert(bus_pkt->isResponse());
             if (bus_pkt->isError()) {
@@ -1296,19 +1260,7 @@ Cache::recvTimingSnoopReq(PacketPtr pkt)
     bool is_secure = pkt->isSecure();
     CacheBlk *blk = tags->findBlock(pkt->getAddr(), is_secure);
 
-    std::string pName = name();
-    Addr blk_addr = 0;
-    if (pName.compare("system.l2A") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    } else if (pName.compare("system.l2B") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 2);
-    } else if (pName.compare("system.l2C") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 4);
-    } else if (pName.compare("system.l2D") == 0) {
-        blk_addr = pkt->getBlockAddr(blkSize / 8);
-    } else {
-        blk_addr = pkt->getBlockAddr(blkSize);
-    }
+    Addr blk_addr = pkt->getBlockAddr(blkSize);
     MSHR *mshr = mshrQueue.findMatch(blk_addr, is_secure);
 
     // Update the latency cost of the snoop so that the crossbar can

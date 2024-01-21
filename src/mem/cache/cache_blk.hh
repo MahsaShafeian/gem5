@@ -138,7 +138,16 @@ class CacheBlk : public TaggedEntry
      *
      */
     Addr history;
+    Addr local_history;
     uint8_t useful;
+    uint64_t state_blk;
+    Addr last_access_addr;
+    Addr min_offset = 0xFF;
+    Addr max_offset;
+    int8_t destinaion = 0;
+    Tick tickTouch = 0;
+    Addr _base;
+    Addr _bounds;
 
   protected:
     /**
@@ -489,27 +498,7 @@ class CacheBlk : public TaggedEntry
      * @param L2X (L2A = 0, L2B = 1, L2C = 2 and L2D = 3)
      */
     void updateHistory(int L2X) {
-        uint32_t _set = this->getSet();
-        Addr _tag = this->getTag();
-        Addr _addr = 0;
-        // AM.A TODO: regenerate address
-        if (L2X == 0) {
-            _addr = ((_tag >> 0) << 14) | (_set << 8);
-        } else if (L2X == 1) {
-            _addr = (((_tag >> 1) << 14) | (((_tag & 1)) << 7)) | (_set << 8);
-        } else if (L2X == 2) {
-            _addr = (((_tag >> 2) << 14) | (((_tag & 3)) << 6)) | (_set << 8);
-        } else if (L2X == 3) {
-            _addr = (((_tag >> 3) << 14) | (((_tag & 7)) << 5)) | (_set << 8);
-        }
-
-        Addr upHis = (((1 << ((~(_addr >> 5) & 7) << 1)) - 1) <<
-                        (((_addr >> 5) & 7) << 1)) +
-                        ((1 << (((_addr >> 5) & 7) << 1)) - 1);
-
-        upHis = history & upHis;
-        upHis = upHis | (L2X << (((_addr >> 5) & 7) << 1));
-        history = upHis;
+        history = local_history;
     }
 
     /**
@@ -518,16 +507,47 @@ class CacheBlk : public TaggedEntry
      * @param addr address of access req
      * @param pName part of cache (system.l2A, system.l2AB, ...)
      */
-    void setAccessBit(Addr addr, std::string pName) {
+    void setAccessBit(PacketPtr pkt, std::string pName) {
+        Addr _offset = pkt->OriginAddr & 0xFF;
+        if (_offset > max_offset)
+            max_offset = _offset;
+        if (_offset < min_offset)
+            min_offset = _offset;
+        Addr addr = pkt->OriginAddr;
+        last_access_addr = addr;
+        state_blk++;
+        int L2X;
         if (pName.compare("system.l2A") == 0) {
-            accRL = ((addr >> 7) & 1) == 1 ? 7 : 0;
+            L2X = 0;
         } else if (pName.compare("system.l2B") == 0) {
-            accRL = ((addr >> 7) & 1) == 1 ? 6 : 0;
+            L2X = 1;
         } else if (pName.compare("system.l2C") == 0) {
-            accRL = ((addr >> 7) & 1) == 1 ? 5 : 0;
+            L2X = 2;
         } else if (pName.compare("system.l2D") == 0) {
-            accRL = ((addr >> 7) & 1) == 1 ? 4 : 0;
+            L2X = 3;
+        } else {
+            return;
         }
+
+        Addr upHis = (((1 << ((~(addr >> 5) & 7) << 1)) - 1) <<
+                        (((addr >> 5) & 7) << 1)) +
+                        ((1 << (((addr >> 5) & 7) << 1)) - 1);
+
+        upHis = local_history & upHis;
+        upHis = upHis | (L2X << (((addr >> 5) & 7) << 1));
+        local_history = upHis;
+    }
+
+    Tick
+    getTickTouch()
+    {
+        return tickTouch;
+    }
+
+    void
+    setTickTouch()
+    {
+        tickTouch = curTick();
     }
 
     /**

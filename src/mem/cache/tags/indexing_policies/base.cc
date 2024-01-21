@@ -101,24 +101,7 @@ BaseIndexingPolicy::setEntry(ReplaceableEntry* entry, const uint64_t index)
 Addr
 BaseIndexingPolicy::extractTag(const Addr addr) const
 {
-    // AM.A Add print log for check tag addr.
-    // DPRINTF(FatAndThin, "%s for %x %x shifted count:%d\n", __func__,
-    //         addr, addr >> tagShift, tagShift);
-    std::string pName = name();
-    if (pName.compare("system.l2A.tags.indexing_policy") == 0) {
-        return (addr >> 14);
-    } else if (pName.compare("system.l2B.tags.indexing_policy") == 0) {
-        Addr pTag = ((addr >> 14) << 1) | ((addr >> 7) & 1);
-        return pTag;
-    } else if (pName.compare("system.l2C.tags.indexing_policy") == 0) {
-        Addr pTag = ((addr >> 14) << 2) | ((addr >> 6) & 3);
-        return pTag;
-    } else if (pName.compare("system.l2D.tags.indexing_policy") == 0) {
-        Addr pTag = ((addr >> 14) << 3) | ((addr >> 5) & 7);
-        return pTag;
-    } else {
-        return (addr >> tagShift);
-    }
+    return (addr >> tagShift);
 }
 
 unsigned
