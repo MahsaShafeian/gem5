@@ -1657,6 +1657,12 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
         compressor->setDecompressionLatency(victim, decompression_lat);
     }
 
+    if (victim) {
+        stats.setUse[victim->getSet()];
+        std::string pName = name();
+        if (pName.compare("system.l2") == 0)
+            std::cout << name() << " -> set:" << victim->getSet() << std::endl;
+    }
     return victim;
 }
 
@@ -2199,6 +2205,8 @@ BaseCache::CacheCmdStats::regStatsFromParent()
 BaseCache::CacheStats::CacheStats(BaseCache &c)
     : statistics::Group(&c), cache(c),
 
+    ADD_STAT(setUse, statistics::units::Count::get(),
+            "number of setUse"),
     ADD_STAT(demandHits, statistics::units::Count::get(),
              "number of demand (read+write) hits"),
     ADD_STAT(overallHits, statistics::units::Count::get(),
@@ -2304,6 +2312,8 @@ BaseCache::CacheStats::regStats()
 #define SUM_NON_DEMAND(s)                                       \
     (cmd[MemCmd::SoftPFReq]->s + cmd[MemCmd::HardPFReq]->s +    \
      cmd[MemCmd::SoftPFExReq]->s)
+
+    setUse.init(10000);
 
     demandHits.flags(total | nozero | nonan);
     demandHits = SUM_DEMAND(hits);
