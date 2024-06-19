@@ -168,7 +168,8 @@ const
 }
 
 ReplaceableEntry*
-TreePLRU::getVictim(const ReplacementCandidates& candidates) const
+TreePLRU::getVictim(const ReplacementCandidates& candidates,
+                    const PacketPtr pkt) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

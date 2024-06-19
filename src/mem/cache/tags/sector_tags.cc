@@ -274,7 +274,7 @@ SectorTags::findBlock(Addr addr, bool is_secure) const
 
 CacheBlk*
 SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
-                       std::vector<CacheBlk*>& evict_blks)
+                       std::vector<CacheBlk*>& evict_blks, const PacketPtr pkt)
 {
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> sector_entries =
@@ -295,7 +295,7 @@ SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
     if (victim_sector == nullptr){
         // Choose replacement victim from replacement candidates
         victim_sector = static_cast<SectorBlk*>(replacementPolicy->getVictim(
-                                                sector_entries));
+                                                sector_entries, pkt));
     }
 
     // Get the entry of the victim block within the sector

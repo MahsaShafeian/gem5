@@ -472,6 +472,10 @@ class Packet : public Printable, public Extensible<Packet>
         virtual ~SenderState() {}
     };
 
+    PacketDataPtr getData() {
+        return data;
+    }
+
     /**
      * Object used to maintain state of a PrintReq.  The senderState
      * field of a PrintReq should always be of this type.

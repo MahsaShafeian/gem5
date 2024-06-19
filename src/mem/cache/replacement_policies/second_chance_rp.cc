@@ -88,7 +88,8 @@ SecondChance::reset(
 }
 
 ReplaceableEntry*
-SecondChance::getVictim(const ReplacementCandidates& candidates) const
+SecondChance::getVictim(const ReplacementCandidates& candidates,
+                        const PacketPtr pkt) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

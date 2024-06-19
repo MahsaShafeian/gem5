@@ -67,7 +67,8 @@ Random::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-Random::getVictim(const ReplacementCandidates& candidates) const
+Random::getVictim(const ReplacementCandidates& candidates,
+                  const PacketPtr pkt) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

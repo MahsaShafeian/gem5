@@ -101,7 +101,8 @@ class Base : public SimObject
      * @return Replacement entry to be replaced.
      */
     virtual ReplaceableEntry* getVictim(
-                           const ReplacementCandidates& candidates) const = 0;
+                           const ReplacementCandidates& candidates,
+                           const PacketPtr pkt = nullptr) const = 0;
 
     /**
      * Instantiate a replacement data entry.

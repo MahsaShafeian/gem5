@@ -31,6 +31,7 @@
 #include <cassert>
 #include <memory>
 
+#include "mem/cache/cache_blk.hh"
 #include "params/LRURP.hh"
 #include "sim/cur_tick.hh"
 
@@ -70,7 +71,8 @@ LRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-LRU::getVictim(const ReplacementCandidates& candidates) const
+LRU::getVictim(const ReplacementCandidates& candidates,
+               const PacketPtr pkt) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);
@@ -79,6 +81,17 @@ LRU::getVictim(const ReplacementCandidates& candidates) const
     ReplaceableEntry* victim = candidates[0];
     for (const auto& candidate : candidates) {
         // Update victim entry if necessary
+
+        std::cout << "candidate data:";
+        uint8_t* data = static_cast<CacheBlk*>(candidate)->data;
+        for (int i = 0; i < pkt->getSize(); i++) {
+            if (data[i] < 0x10)
+                printf("0");
+            printf("%x ", data[i]);
+            // std::cout << std::hex << data[i];
+        }
+        std::cout << std::endl;
+
         if (std::static_pointer_cast<LRUReplData>(
                     candidate->replacementData)->lastTouchTick <
                 std::static_pointer_cast<LRUReplData>(
@@ -86,6 +99,16 @@ LRU::getVictim(const ReplacementCandidates& candidates) const
             victim = candidate;
         }
     }
+
+    std::cout << "incoming data :";
+    uint8_t* data = pkt->getData();
+        for (int i = 0; i < pkt->getSize(); i++) {
+            if (data[i] < 0x10)
+                printf("0");
+            printf("%x ", data[i]);
+            // std::cout << std::hex << data[i];
+        }
+        std::cout << std::endl;
 
     return victim;
 }
