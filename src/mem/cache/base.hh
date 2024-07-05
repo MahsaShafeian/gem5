@@ -1047,8 +1047,6 @@ class BaseCache : public ClockedObject
 
         const BaseCache &cache;
 
-        statistics::Vector setUse;
-
         /** Number of hits for demand accesses. */
         statistics::Formula demandHits;
         /** Number of hit for all accesses. */

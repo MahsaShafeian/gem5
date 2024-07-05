@@ -55,11 +55,13 @@ AssociativeSet<Entry>::AssociativeSet(int assoc, int num_entries,
 
 template<class Entry>
 Entry*
-AssociativeSet<Entry>::findEntry(Addr addr, bool is_secure) const
+AssociativeSet<Entry>::findEntry(Addr addr, bool is_secure,
+                                 bool* isMerged) const
 {
+    panic_if(isMerged == nullptr, "isMerged is null!");
     Addr tag = indexingPolicy->extractTag(addr);
     const std::vector<ReplaceableEntry*> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, isMerged);
 
     for (const auto& location : selected_entries) {
         Entry* entry = static_cast<Entry *>(location);
@@ -80,11 +82,13 @@ AssociativeSet<Entry>::accessEntry(Entry *entry)
 
 template<class Entry>
 Entry*
-AssociativeSet<Entry>::findVictim(Addr addr)
+AssociativeSet<Entry>::findVictim(Addr addr, bool* isMerged)
 {
+    panic_if(isMerged == nullptr, "isMerged is null!");
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, isMerged);
+
     Entry* victim = static_cast<Entry*>(replacementPolicy->getVictim(
                             selected_entries));
     // There is only one eviction for this replacement
@@ -95,10 +99,13 @@ AssociativeSet<Entry>::findVictim(Addr addr)
 
 template<class Entry>
 std::vector<Entry *>
-AssociativeSet<Entry>::getPossibleEntries(const Addr addr) const
+AssociativeSet<Entry>::getPossibleEntries(const Addr addr,
+                                          bool* isMerged) const
 {
+    panic_if(isMerged == nullptr, "isMerged is null!");
     std::vector<ReplaceableEntry *> selected_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, isMerged);
+
     std::vector<Entry *> entries(selected_entries.size(), nullptr);
 
     unsigned int idx = 0;

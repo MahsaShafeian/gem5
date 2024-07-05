@@ -107,9 +107,18 @@ CompressedTags::findVictim(Addr addr, const bool is_secure,
                            std::vector<CacheBlk*>& evict_blks,
                            const PacketPtr pkt)
 {
+    bool isMerged = false;
     // Get all possible locations of this superblock
     const std::vector<ReplaceableEntry*> superblock_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, &isMerged);
+
+    if (isMerged) {
+        stats.mergedSetAccesses++;
+    } else {
+        stats.unmergedSetAccesses++;
+    }
+
+    Addr set = static_cast<CacheBlk*>(superblock_entries[0])->getSet();
 
     // Check if the superblock this address belongs to has been allocated. If
     // so, try co-allocating
@@ -119,7 +128,9 @@ CompressedTags::findVictim(Addr addr, const bool is_secure,
     const uint64_t offset = extractSectorOffset(addr);
     for (const auto& entry : superblock_entries){
         SuperBlk* superblock = static_cast<SuperBlk*>(entry);
-        if (superblock->matchTag(tag, is_secure) &&
+        if (superblock->matchTag(tag, is_secure,
+            superblock->getSet() != set,
+            static_cast<CacheBlk*>(entry)->is_occupied) &&
             !superblock->blks[offset]->isValid() &&
             superblock->isCompressed() &&
             superblock->canCoAllocate(compressed_size))

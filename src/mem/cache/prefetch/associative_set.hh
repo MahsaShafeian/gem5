@@ -82,7 +82,8 @@ class AssociativeSet
      * @return returns a pointer to the wanted entry or nullptr if it does not
      *  exist.
      */
-    Entry* findEntry(Addr addr, bool is_secure) const;
+    Entry* findEntry(Addr addr, bool is_secure,
+                     bool* isMerged = nullptr) const;
 
     /**
      * Do an access to the entry, this is required to
@@ -96,7 +97,7 @@ class AssociativeSet
      * @param addr key to select the possible victim
      * @result entry to be victimized
      */
-    Entry* findVictim(Addr addr);
+    Entry* findVictim(Addr addr, bool* isMerged = nullptr);
 
     /**
      * Find the set of entries that could be replaced given
@@ -104,7 +105,8 @@ class AssociativeSet
      * @param addr key to select the set of entries
      * @result vector of candidates matching with the provided key
      */
-    std::vector<Entry *> getPossibleEntries(const Addr addr) const;
+    std::vector<Entry *> getPossibleEntries(const Addr addr,
+                            bool* isMerged = nullptr) const;
 
     /**
      * Indicate that an entry has just been inserted

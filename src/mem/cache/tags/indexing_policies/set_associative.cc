@@ -70,9 +70,24 @@ SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
 }
 
 std::vector<ReplaceableEntry*>
-SetAssociative::getPossibleEntries(const Addr addr) const
+SetAssociative::getPossibleEntries(const Addr addr, bool* isMerged) const
 {
-    return sets[extractSet(addr)];
+    panic_if(isMerged == nullptr, "isMerged is null!");
+    // return sets[extractSet(addr)];
+    std::vector<ReplaceableEntry*> candidates = sets[extractSet(addr)];
+    std::string pName = name();
+    if (pName.compare("system.l2.tags.indexing_policy") == 0) {
+        if (setsUsage[extractSet(addr)] != extractSet(addr)) {
+            for (const auto& blk : sets[setsUsage[extractSet(addr)]]) {
+                // Update victim entry if necessary
+                candidates.push_back(blk);
+            }
+            *isMerged = true;
+        } else {
+            *isMerged = false;
+        }
+    }
+    return candidates;
 }
 
 } // namespace gem5

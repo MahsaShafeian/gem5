@@ -247,7 +247,7 @@ SectorTags::moveBlock(CacheBlk *src_blk, CacheBlk *dest_blk)
 }
 
 CacheBlk*
-SectorTags::findBlock(Addr addr, bool is_secure) const
+SectorTags::findBlock(Addr addr, bool is_secure)
 {
     // Extract sector tag
     const Addr tag = extractTag(addr);
@@ -256,14 +256,27 @@ SectorTags::findBlock(Addr addr, bool is_secure) const
     // due to sectors being composed of contiguous-address entries
     const Addr offset = extractSectorOffset(addr);
 
+    bool isMerged = false;
     // Find all possible sector entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, &isMerged);
+
+    if (isMerged) {
+        // TODO: count the number of merged set access
+        stats.mergedSetAccesses++;
+    } else {
+        stats.unmergedSetAccesses++;
+    }
+
+    Addr set = static_cast<CacheBlk*>(entries[0])->getSet();
 
     // Search for block
     for (const auto& sector : entries) {
         auto blk = static_cast<SectorBlk*>(sector)->blks[offset];
-        if (blk->matchTag(tag, is_secure)) {
+        if (blk->matchTag(tag, is_secure,
+            blk->getSet() != set,
+            blk->is_occupied)) {
+            // std::cout << name() << " -> " << std::hex << addr << std::endl;
             return blk;
         }
     }
@@ -276,16 +289,27 @@ CacheBlk*
 SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
                        std::vector<CacheBlk*>& evict_blks, const PacketPtr pkt)
 {
+    bool isMerged = false;
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> sector_entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, &isMerged);
+
+    if (isMerged) {
+        stats.mergedSetAccesses++;
+    } else {
+        stats.unmergedSetAccesses++;
+    }
+
+    Addr set = static_cast<CacheBlk*>(sector_entries[0])->getSet();
 
     // Check if the sector this address belongs to has been allocated
     Addr tag = extractTag(addr);
     SectorBlk* victim_sector = nullptr;
     for (const auto& sector : sector_entries) {
         SectorBlk* sector_blk = static_cast<SectorBlk*>(sector);
-        if (sector_blk->matchTag(tag, is_secure)) {
+        if (sector_blk->matchTag(tag, is_secure,
+            sector_blk->getSet() != set,
+            static_cast<CacheBlk*>(sector)->is_occupied)) {
             victim_sector = sector_blk;
             break;
         }
@@ -303,7 +327,7 @@ SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
 
     // Get evicted blocks. Blocks are only evicted if the sectors mismatch and
     // the currently existing sector is valid.
-    if (victim_sector->matchTag(tag, is_secure)) {
+    if (victim_sector->matchTag(tag, is_secure, false, false)) {
         // It would be a hit if victim was valid, and upgrades do not call
         // findVictim, so it cannot happen
         assert(!victim->isValid());

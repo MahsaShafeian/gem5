@@ -170,13 +170,25 @@ class BaseSetAssoc : public BaseTags
                          std::vector<CacheBlk*>& evict_blks,
                          const PacketPtr pkt = nullptr) override
     {
+        bool isMerged = false;
         // Get possible entries to be victimized
         const std::vector<ReplaceableEntry*> entries =
-            indexingPolicy->getPossibleEntries(addr);
+            indexingPolicy->getPossibleEntries(addr, &isMerged);
 
+        if (isMerged) {
+            stats.mergedSetAccesses++;
+        } else {
+            stats.unmergedSetAccesses++;
+        }
+        std::string pName = name();
         // Choose replacement victim from replacement candidates
         CacheBlk* victim = static_cast<CacheBlk*>(replacementPolicy->getVictim(
                                 entries, pkt));
+
+        if (pName.compare("system.l2.tags")) {
+            // TODO: hear check the merge condition
+            uint32_t _set = victim->getSet();
+        }
 
         // There is only one eviction for this replacement
         evict_blks.push_back(victim);

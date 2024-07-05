@@ -108,6 +108,8 @@ class CacheBlk : public TaggedEntry
      */
     Tick whenReady = 0;
 
+    bool is_occupied = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

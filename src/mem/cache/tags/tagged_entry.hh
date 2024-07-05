@@ -78,9 +78,12 @@ class TaggedEntry : public ReplaceableEntry
      * @return True if the tag information match this entry's.
      */
     virtual bool
-    matchTag(Addr tag, bool is_secure) const
+    matchTag(Addr tag, bool is_secure, bool occupied, bool is_occupied) const
     {
-        return isValid() && (getTag() == tag) && (isSecure() == is_secure);
+        return isValid() &&
+               (getTag() == tag) &&
+               (isSecure() == is_secure &&
+               (is_occupied == occupied));
     }
 
     /**

@@ -77,19 +77,30 @@ BaseTags::findBlockBySetAndWay(int set, int way) const
 }
 
 CacheBlk*
-BaseTags::findBlock(Addr addr, bool is_secure) const
+BaseTags::findBlock(Addr addr, bool is_secure)
 {
     // Extract block tag
     Addr tag = extractTag(addr);
 
+    bool isMerged = false;
     // Find possible entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr);
+        indexingPolicy->getPossibleEntries(addr, &isMerged);
+
+    if (isMerged) {
+        // TODO: count the number of merged set access
+        stats.mergedSetAccesses++;
+    } else {
+        stats.unmergedSetAccesses++;
+    }
+    Addr set = static_cast<CacheBlk*>(entries[0])->getSet();
 
     // Search for block
     for (const auto& location : entries) {
         CacheBlk* blk = static_cast<CacheBlk*>(location);
-        if (blk->matchTag(tag, is_secure)) {
+        if (blk->matchTag(tag, is_secure,
+            blk->getSet() != set,
+            blk->is_occupied)) {
             return blk;
         }
     }
@@ -246,7 +257,11 @@ BaseTags::BaseTagStats::BaseTagStats(BaseTags &_tags)
     ADD_STAT(tagAccesses, statistics::units::Count::get(),
              "Number of tag accesses"),
     ADD_STAT(dataAccesses, statistics::units::Count::get(),
-             "Number of data accesses")
+             "Number of data accesses"),
+    ADD_STAT(mergedSetAccesses, statistics::units::Count::get(),
+             "Number of merged Set accesses"),
+    ADD_STAT(unmergedSetAccesses, statistics::units::Count::get(),
+             "Number of unmerged Set accesses")
 {
 }
 

@@ -91,12 +91,17 @@ class BaseIndexingPolicy : public SimObject
      */
     std::vector<std::vector<ReplaceableEntry*>> sets;
 
+    std::vector<int> setsUsage;
+
     /**
      * The amount to shift the address to get the tag.
      */
     const int tagShift;
 
   public:
+
+    std::vector<bool> setsIsMOrS;
+
     /**
      * Convenience typedef.
      */
@@ -146,7 +151,8 @@ class BaseIndexingPolicy : public SimObject
      * @param addr The addr to a find possible entries for.
      * @return The possible entries.
      */
-    virtual std::vector<ReplaceableEntry*> getPossibleEntries(const Addr addr)
+    virtual std::vector<ReplaceableEntry*> getPossibleEntries(const Addr addr,
+                                                     bool* isMerged = nullptr)
                                                                     const = 0;
 
     /**

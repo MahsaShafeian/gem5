@@ -207,7 +207,7 @@ SkewedAssociative::regenerateAddr(const Addr tag,
 }
 
 std::vector<ReplaceableEntry*>
-SkewedAssociative::getPossibleEntries(const Addr addr) const
+SkewedAssociative::getPossibleEntries(const Addr addr, bool* isMerged) const
 {
     std::vector<ReplaceableEntry*> entries;
 
