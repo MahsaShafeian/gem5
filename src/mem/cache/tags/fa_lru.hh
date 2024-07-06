@@ -196,7 +196,8 @@ class FALRU : public BaseTags
      * @param asid The address space ID.
      * @return Pointer to the cache block.
      */
-    CacheBlk* findBlock(Addr addr, bool is_secure) override;
+    CacheBlk* findBlock(Addr addr, bool is_secure,
+                        bool* isMerged = nullptr) override;
 
     /**
      * Find a block given set and way.

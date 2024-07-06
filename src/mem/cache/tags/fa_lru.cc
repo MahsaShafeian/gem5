@@ -164,7 +164,7 @@ FALRU::accessBlock(const PacketPtr pkt, Cycles &lat,
 }
 
 CacheBlk*
-FALRU::findBlock(Addr addr, bool is_secure)
+FALRU::findBlock(Addr addr, bool is_secure, bool* isMerged)
 {
     FALRUBlk* blk = nullptr;
 

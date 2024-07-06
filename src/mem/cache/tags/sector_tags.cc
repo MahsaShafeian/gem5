@@ -141,7 +141,8 @@ SectorTags::invalidate(CacheBlk *blk)
 CacheBlk*
 SectorTags::accessBlock(const PacketPtr pkt, Cycles &lat)
 {
-    CacheBlk *blk = findBlock(pkt->getAddr(), pkt->isSecure());
+    bool isMerged;
+    CacheBlk *blk = findBlock(pkt->getAddr(), pkt->isSecure(), &isMerged);
 
     // Access all tags in parallel, hence one in each way.  The data side
     // either accesses all blocks in parallel, or one block sequentially on
@@ -153,6 +154,12 @@ SectorTags::accessBlock(const PacketPtr pkt, Cycles &lat)
         }
     } else {
         stats.dataAccesses += allocAssoc*numBlocksPerSector;
+    }
+
+    if (isMerged) {
+        stats.mergedSetAccesses += (2 * allocAssoc);
+    } else {
+        stats.unmergedSetAccesses += allocAssoc;
     }
 
     // If a cache hit
@@ -247,7 +254,7 @@ SectorTags::moveBlock(CacheBlk *src_blk, CacheBlk *dest_blk)
 }
 
 CacheBlk*
-SectorTags::findBlock(Addr addr, bool is_secure)
+SectorTags::findBlock(Addr addr, bool is_secure, bool* isMerged)
 {
     // Extract sector tag
     const Addr tag = extractTag(addr);
@@ -256,17 +263,9 @@ SectorTags::findBlock(Addr addr, bool is_secure)
     // due to sectors being composed of contiguous-address entries
     const Addr offset = extractSectorOffset(addr);
 
-    bool isMerged = false;
     // Find all possible sector entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr, &isMerged);
-
-    if (isMerged) {
-        // TODO: count the number of merged set access
-        stats.mergedSetAccesses++;
-    } else {
-        stats.unmergedSetAccesses++;
-    }
+        indexingPolicy->getPossibleEntries(addr, isMerged);
 
     Addr set = static_cast<CacheBlk*>(entries[0])->getSet();
 

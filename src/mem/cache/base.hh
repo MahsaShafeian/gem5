@@ -1273,11 +1273,13 @@ class BaseCache : public ClockedObject
     }
 
     bool inCache(Addr addr, bool is_secure) const {
-        return tags->findBlock(addr, is_secure);
+        bool isMerged = false;
+        return tags->findBlock(addr, is_secure, &isMerged);
     }
 
     bool hasBeenPrefetched(Addr addr, bool is_secure) const {
-        CacheBlk *block = tags->findBlock(addr, is_secure);
+        bool isMerged = false;
+        CacheBlk *block = tags->findBlock(addr, is_secure, &isMerged);
         if (block) {
             return block->wasPrefetched();
         } else {

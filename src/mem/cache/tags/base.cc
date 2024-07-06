@@ -77,22 +77,15 @@ BaseTags::findBlockBySetAndWay(int set, int way) const
 }
 
 CacheBlk*
-BaseTags::findBlock(Addr addr, bool is_secure)
+BaseTags::findBlock(Addr addr, bool is_secure, bool* isMerged)
 {
     // Extract block tag
     Addr tag = extractTag(addr);
 
-    bool isMerged = false;
     // Find possible entries that may contain the given address
     const std::vector<ReplaceableEntry*> entries =
-        indexingPolicy->getPossibleEntries(addr, &isMerged);
+        indexingPolicy->getPossibleEntries(addr, isMerged);
 
-    if (isMerged) {
-        // TODO: count the number of merged set access
-        stats.mergedSetAccesses++;
-    } else {
-        stats.unmergedSetAccesses++;
-    }
     Addr set = static_cast<CacheBlk*>(entries[0])->getSet();
 
     // Search for block
@@ -135,6 +128,7 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
     // We only need to write into one tag and one data block.
     stats.tagAccesses += 1;
     stats.dataAccesses += 1;
+    stats.mergedSetAccesses++;
 }
 
 void

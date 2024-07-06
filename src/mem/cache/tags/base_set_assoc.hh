@@ -126,12 +126,19 @@ class BaseSetAssoc : public BaseTags
      */
     CacheBlk* accessBlock(const PacketPtr pkt, Cycles &lat) override
     {
-        CacheBlk *blk = findBlock(pkt->getAddr(), pkt->isSecure());
+        bool isMerged = false;
+        CacheBlk *blk = findBlock(pkt->getAddr(), pkt->isSecure(),
+                                  &isMerged);
 
         // Access all tags in parallel, hence one in each way.  The data side
         // either accesses all blocks in parallel, or one block sequentially on
         // a hit.  Sequential access with a miss doesn't access data.
         stats.tagAccesses += allocAssoc;
+        if (isMerged) {
+            stats.mergedSetAccesses += (2 * allocAssoc);
+        } else {
+            stats.unmergedSetAccesses += allocAssoc;
+        }
         if (sequentialAccess) {
             if (blk != nullptr) {
                 stats.dataAccesses += 1;

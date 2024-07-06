@@ -162,7 +162,8 @@ class SectorTags : public BaseTags
      * @param is_secure True if the target memory space is secure.
      * @return Pointer to the cache block if found.
      */
-    CacheBlk* findBlock(Addr addr, bool is_secure) override;
+    CacheBlk* findBlock(Addr addr, bool is_secure,
+                        bool* isMerged = nullptr) override;
 
     /**
      * Find replacement victim based on address.
