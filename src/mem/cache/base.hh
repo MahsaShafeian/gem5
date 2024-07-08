@@ -103,6 +103,8 @@ class BaseCache : public ClockedObject
         MSHRQueue_WriteBuffer
     };
 
+    uint64_t numberOfEvict = 0;
+
   public:
     /**
      * Reasons for caches to be blocked.

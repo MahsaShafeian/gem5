@@ -110,6 +110,8 @@ class CacheBlk : public TaggedEntry
 
     bool is_occupied = 0;
 
+    Addr originalSet = 0;
+
   protected:
     /**
      * Represents that the indicated thread context has a "lock" on

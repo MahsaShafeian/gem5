@@ -91,8 +91,6 @@ class BaseIndexingPolicy : public SimObject
      */
     std::vector<std::vector<ReplaceableEntry*>> sets;
 
-    std::vector<int> setsUsage;
-
     /**
      * The amount to shift the address to get the tag.
      */
@@ -100,7 +98,10 @@ class BaseIndexingPolicy : public SimObject
 
   public:
 
+    std::vector<int> setsUsage;
     std::vector<bool> setsIsMOrS;
+
+    uint32_t getNumSets() const;
 
     /**
      * Convenience typedef.
@@ -164,6 +165,8 @@ class BaseIndexingPolicy : public SimObject
      */
     virtual Addr regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
                                                                     const = 0;
+
+    virtual uint32_t pubExtractSet(const Addr tag) const = 0;
 };
 
 } // namespace gem5

@@ -73,6 +73,14 @@ BaseIndexingPolicy::BaseIndexingPolicy(const Params &p)
         setsUsage[i] = i;
         setsIsMOrS[i] = 0;
     }
+
+    std::cout << name() << " -> set shift:" << setShift << std::endl;
+    std::cout << name() << " -> tag shift:" << tagShift << std::endl;
+}
+
+uint32_t
+BaseIndexingPolicy::getNumSets() const {
+    return numSets;
 }
 
 ReplaceableEntry*

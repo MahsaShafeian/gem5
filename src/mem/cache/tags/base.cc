@@ -70,6 +70,33 @@ BaseTags::BaseTags(const Params &p)
     registerExitCallback([this]() { cleanupRefs(); });
 }
 
+std::vector<bool>
+BaseTags::getSetsIsMOrS() {
+    return indexingPolicy->setsIsMOrS;
+}
+
+void
+BaseTags::setSetsIsMOrS(int _set) {
+    indexingPolicy->setsIsMOrS[_set] = true;
+}
+
+std::vector<int>
+BaseTags::getSetsUsage() {
+    return indexingPolicy->setsUsage;
+}
+
+void
+BaseTags::setSetsUsage(int mSet, int sSet) {
+    indexingPolicy->setsUsage[mSet] = sSet;
+    indexingPolicy->setsIsMOrS[mSet] = true;
+    indexingPolicy->setsIsMOrS[sSet] = true;
+}
+
+uint32_t
+BaseTags::getNumSets() {
+    return indexingPolicy->getNumSets();
+}
+
 ReplaceableEntry*
 BaseTags::findBlockBySetAndWay(int set, int way) const
 {
@@ -118,6 +145,11 @@ BaseTags::insertBlock(const PacketPtr pkt, CacheBlk *blk)
     // Insert block with tag, src requestor id and task id
     blk->insert(extractTag(pkt->getAddr()), pkt->isSecure(), requestor_id,
                 pkt->req->taskId());
+
+    if (indexingPolicy->pubExtractSet(pkt->getAddr()) != blk->getSet()) {
+        blk->is_occupied = true;
+        blk->originalSet = indexingPolicy->pubExtractSet(pkt->getAddr());
+    }
 
     // Check if cache warm up is done
     if (!warmedUp && stats.tagsInUse.value() >= warmupBound) {

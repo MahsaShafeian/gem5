@@ -220,4 +220,11 @@ SkewedAssociative::getPossibleEntries(const Addr addr, bool* isMerged) const
     return entries;
 }
 
+
+uint32_t
+SkewedAssociative::pubExtractSet(const Addr addr) const
+{
+    return (addr >> setShift) & setMask;
+}
+
 } // namespace gem5

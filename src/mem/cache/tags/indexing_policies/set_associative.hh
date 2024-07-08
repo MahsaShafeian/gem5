@@ -47,6 +47,8 @@
 #ifndef __MEM_CACHE_INDEXING_POLICIES_SET_ASSOCIATIVE_HH__
 #define __MEM_CACHE_INDEXING_POLICIES_SET_ASSOCIATIVE_HH__
 
+
+#include <cstdint>
 #include <vector>
 
 #include "mem/cache/tags/indexing_policies/base.hh"
@@ -127,6 +129,8 @@ class SetAssociative : public BaseIndexingPolicy
      */
     Addr regenerateAddr(const Addr tag, const ReplaceableEntry* entry) const
                                                                    override;
+
+    uint32_t pubExtractSet(const Addr addr) const override;
 };
 
 } // namespace gem5

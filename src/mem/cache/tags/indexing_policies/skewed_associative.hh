@@ -173,6 +173,8 @@ class SkewedAssociative : public BaseIndexingPolicy
      */
     Addr regenerateAddr(const Addr tag, const ReplaceableEntry* entry) const
                                                                    override;
+
+    uint32_t pubExtractSet(const Addr addr) const override;
 };
 
 } // namespace gem5

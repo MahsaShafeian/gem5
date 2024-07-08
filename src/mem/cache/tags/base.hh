@@ -170,6 +170,12 @@ class BaseTags : public ClockedObject
      */
     virtual ~BaseTags() {}
 
+    std::vector<bool> getSetsIsMOrS();
+    void setSetsIsMOrS(int _set);
+    std::vector<int> getSetsUsage();
+    void setSetsUsage(int mSet, int sSet);
+    uint32_t getNumSets();
+
     /**
      * Initialize blocks. Must be overriden by every subclass that uses
      * a block type different from its parent's, as the current Python

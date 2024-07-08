@@ -46,6 +46,7 @@
 
 #include "mem/cache/tags/indexing_policies/set_associative.hh"
 
+#include "mem/cache/cache_blk.hh"
 #include "mem/cache/replacement_policies/replaceable_entry.hh"
 
 namespace gem5
@@ -62,11 +63,22 @@ SetAssociative::extractSet(const Addr addr) const
     return (addr >> setShift) & setMask;
 }
 
+uint32_t
+SetAssociative::pubExtractSet(const Addr addr) const
+{
+    return (addr >> setShift) & setMask;
+}
+
 Addr
 SetAssociative::regenerateAddr(const Addr tag, const ReplaceableEntry* entry)
                                                                         const
 {
-    return (tag << tagShift) | (entry->getSet() << setShift);
+    CacheBlk* blk = (CacheBlk*)entry;
+    if (blk->is_occupied) {
+        return (tag << tagShift) | (blk->originalSet << setShift);
+    } else {
+        return (tag << tagShift) | (entry->getSet() << setShift);
+    }
 }
 
 std::vector<ReplaceableEntry*>

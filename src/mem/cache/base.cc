@@ -952,6 +952,7 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
     for (const auto& blk : evict_blks) {
         if (blk->isValid()) {
             replacement = true;
+            tags->setSetsIsMOrS(blk->getSet());
 
             const MSHR* mshr =
                 mshrQueue.findMatch(regenerateBlkAddr(blk), blk->isSecure());
@@ -969,7 +970,27 @@ BaseCache::handleEvictions(std::vector<CacheBlk*> &evict_blks,
     // counter if a valid block is being replaced
     if (replacement) {
         stats.replacements++;
+        numberOfEvict++;
+        std::string pName = name();
+        if (pName.compare("system.l2") == 0 && numberOfEvict % 1000 == 0) {
+            std::vector<bool> setsIsMOrS = tags->getSetsIsMOrS();
+            std::vector<int> setsUsage = tags->getSetsUsage();
+            uint32_t numSets = tags->getNumSets();
+            // uint32_t indexM = 0, indexS = numSets/2;
+            for (int i = 0; i < numSets/2; i++) {
+                if (setsIsMOrS[i]) {
+                    for (int j = numSets/2; j < numSets; j++)
+                    {
+                        if (!setsIsMOrS[j]) {
+                            tags->setSetsUsage(i, j);
+                            setsIsMOrS[j] = true;
+                            break;
+                        }
+                    }
 
+                }
+            }
+        }
         // Evict valid blocks associated to this victim block
         for (auto& blk : evict_blks) {
             if (blk->isValid()) {
@@ -1554,6 +1575,14 @@ BaseCache::handleFill(PacketPtr pkt, CacheBlk *blk, PacketList &writebacks,
     // Block is guaranteed to be valid at this point
     assert(blk->isValid());
     assert(blk->isSecure() == is_secure);
+    if (regenerateBlkAddr(blk) != addr) {
+        std::cout << "allocate:" << allocate;
+        std::cout << ", is_occupied:" << blk->is_occupied;
+        std::cout << ", origin set:" << std::hex << blk->originalSet;
+        std::cout << ", assert -> regenerateBlkAddr(blk):";
+        std::cout << std::hex << regenerateBlkAddr(blk);
+        std::cout << ", addr:" << std::hex << addr << std::endl;
+    }
     assert(regenerateBlkAddr(blk) == addr);
 
     blk->setCoherenceBits(CacheBlk::ReadableBit);
@@ -1673,6 +1702,9 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
 void
 BaseCache::invalidateBlock(CacheBlk *blk)
 {
+    blk->originalSet = blk->getSet();
+    blk->is_occupied = false;
+
     // If block is still marked as prefetched, then it hasn't been used
     if (blk->wasPrefetched()) {
         prefetcher->prefetchUnused();
