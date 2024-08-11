@@ -76,6 +76,20 @@ Dueling::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
+Dueling::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+Dueling::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 Dueling::reset(const std::shared_ptr<ReplacementData>& replacement_data,
     const PacketPtr pkt)
 {
@@ -107,7 +121,8 @@ Dueling::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-Dueling::getVictim(const ReplacementCandidates& candidates) const
+Dueling::getVictim(const ReplacementCandidates& candidates,
+                    const uint64_t type) const
 {
     // This function assumes that all candidates are either part of the same
     // sampled set, or are not samples.
@@ -162,8 +177,9 @@ Dueling::getVictim(const ReplacementCandidates& candidates) const
     }
 
     // Use the selected replacement policy to find the victim
-    ReplaceableEntry* victim = team_a ? replPolicyA->getVictim(candidates) :
-        replPolicyB->getVictim(candidates);
+    ReplaceableEntry* victim = team_a ? replPolicyA->getVictim(candidates,
+                                                                type) :
+        replPolicyB->getVictim(candidates, type);
 
     // Search for entry within the original candidates and clean-up duplicates
     for (int i = 0; i < candidates.size(); i++) {

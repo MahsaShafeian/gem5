@@ -155,6 +155,18 @@ class SectorTags : public BaseTags
     void moveBlock(CacheBlk *src_blk, CacheBlk *dest_blk) override;
 
     /**
+     * get the block heat from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return heat block.
+     */
+    uint64_t getblkheat(const CacheBlk *blk ,const int i) const override
+    {
+        return 0;
+    }
+
+    /**
      * Finds the given address in the cache, do not update replacement data.
      * i.e. This is a no-side-effect find of a block.
      *
@@ -175,7 +187,8 @@ class SectorTags : public BaseTags
      */
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
-                         std::vector<CacheBlk*>& evict_blks) override;
+                         std::vector<CacheBlk*>& evict_blks,
+                         const uint64_t type) override;
 
     /**
      * Calculate a block's offset in a sector from the address.

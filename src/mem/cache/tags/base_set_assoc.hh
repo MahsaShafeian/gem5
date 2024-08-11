@@ -147,6 +147,10 @@ class BaseSetAssoc : public BaseTags
 
             // Update replacement data of accessed block
             replacementPolicy->touch(blk->replacementData, pkt);
+            if (pkt->isWrite()){
+                // std :: cout << "base_set_asso" << std :: endl;
+                replacementPolicy->touchBit(blk->replacementData, pkt);
+            }
         }
 
         // The tag lookup latency is the same for a hit or a miss
@@ -154,7 +158,17 @@ class BaseSetAssoc : public BaseTags
 
         return blk;
     }
-
+    /**
+     * get the block heat from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return heat block.
+     */
+    uint64_t getblkheat(const CacheBlk *blk ,const int i) const override
+    {
+        return replacementPolicy->getheat(blk->replacementData, i);
+    }
     /**
      * Find replacement victim based on address. The list of evicted blocks
      * only contains the victim.
@@ -167,7 +181,8 @@ class BaseSetAssoc : public BaseTags
      */
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
-                         std::vector<CacheBlk*>& evict_blks) override
+                         std::vector<CacheBlk*>& evict_blks,
+                         const uint64_t type) override
     {
         // Get possible entries to be victimized
         const std::vector<ReplaceableEntry*> entries =
@@ -175,7 +190,7 @@ class BaseSetAssoc : public BaseTags
 
         // Choose replacement victim from replacement candidates
         CacheBlk* victim = static_cast<CacheBlk*>(replacementPolicy->getVictim(
-                                entries));
+                                entries, type));
 
         // There is only one eviction for this replacement
         evict_blks.push_back(victim);

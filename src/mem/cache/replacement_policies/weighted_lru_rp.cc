@@ -56,8 +56,23 @@ WeightedLRU::touch(const std::shared_ptr<ReplacementData>& replacement_data,
                                                   last_occ_ptr = occupancy;
 }
 
+void
+WeightedLRU::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+WeightedLRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
 ReplaceableEntry*
-WeightedLRU::getVictim(const ReplacementCandidates& candidates) const
+WeightedLRU::getVictim(const ReplacementCandidates& candidates,
+                        const uint64_t type) const
 {
     assert(candidates.size() > 0);
 

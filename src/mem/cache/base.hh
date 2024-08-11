@@ -486,7 +486,7 @@ class BaseCache : public ClockedObject
      */
     virtual bool access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                         PacketList &writebacks);
-
+    void printsetway();
     /*
      * Handle a timing request that hit in the cache
      *
@@ -1128,6 +1128,9 @@ class BaseCache : public ClockedObject
 
         /** Number of replacements of valid blocks. */
         statistics::Scalar replacements;
+
+        /** Number of Writes. */
+        statistics::Scalar TotalWrites;
 
         /** Number of data expansions. */
         statistics::Scalar dataExpansions;

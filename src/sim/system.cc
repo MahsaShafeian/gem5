@@ -227,6 +227,39 @@ System::getPort(const std::string &if_name, PortID idx)
 }
 
 void
+System::AddTable(uint64_t start, uint64_t end, uint64_t type){
+    std::cout << "addType" << std::endl;
+    type_table[end_index][0] = start;
+    type_table[end_index][1] = end;
+    type_table[end_index][2] = type;
+    end_index++;
+    for (int i=0; i< end_index;i++){
+        for (int j=0; j < 3;j++){
+            std::cout << "Type Table[";
+            std :: cout << i << "]["<< j <<"]:";
+            std :: cout <<  type_table[i][j];
+            std :: cout << std::endl;
+        }
+    }
+    std::cout << "end addType" << std::endl;
+}
+
+uint64_t
+System::getType(uint64_t addr){
+    // std::cout << "getType" << std::endl;
+    uint64_t type = 0x0;
+    for (int i = 0; i <= end_index; i++) {
+        if (addr <= type_table[i][0] && addr >= type_table[i][1]){
+            return (uint64_t) type_table[i][2];
+        }
+
+    }
+    // std::cout << "end getType" << std::endl;
+    return (uint64_t) type;
+
+}
+
+void
 System::setMemoryMode(enums::MemoryMode mode)
 {
     assert(drainState() == DrainState::Drained);

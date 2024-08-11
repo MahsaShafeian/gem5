@@ -84,7 +84,10 @@ class MRU : public Base
      */
     void touch(const std::shared_ptr<ReplacementData>& replacement_data) const
                                                                      override;
-
+    void touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+        const PacketPtr pkt = nullptr) const override;
+    uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+                    const int i) const override;
     /**
      * Reset replacement data. Used when an entry is inserted.
      * Sets its last touch tick as the current tick.
@@ -100,7 +103,8 @@ class MRU : public Base
      * @param cands Replacement candidates, selected by indexing policy.
      * @return Replacement entry to be replaced.
      */
-    ReplaceableEntry* getVictim(const ReplacementCandidates& candidates) const
+    ReplaceableEntry* getVictim(const ReplacementCandidates& candidates,
+                                const uint64_t type) const
                                                                      override;
 
     /**

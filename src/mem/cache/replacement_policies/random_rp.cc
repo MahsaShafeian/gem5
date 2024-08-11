@@ -59,6 +59,20 @@ Random::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
+Random::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+Random::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 Random::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
     // Unprioritize replacement data victimization
@@ -67,7 +81,8 @@ Random::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-Random::getVictim(const ReplacementCandidates& candidates) const
+Random::getVictim(const ReplacementCandidates& candidates,
+                    const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

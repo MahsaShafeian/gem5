@@ -171,6 +171,18 @@ class FALRU : public BaseTags
     void invalidate(CacheBlk *blk) override;
 
     /**
+     * get the block heat from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return heat block.
+     */
+    uint64_t getblkheat(const CacheBlk *blk ,const int i) const override
+    {
+        return 0;
+    }
+
+    /**
      * Access block and update replacement data.  May not succeed, in which
      * case nullptr pointer is returned.  This has all the implications of a
      * cache access and should only be used as such.
@@ -219,7 +231,8 @@ class FALRU : public BaseTags
      */
     CacheBlk* findVictim(Addr addr, const bool is_secure,
                          const std::size_t size,
-                         std::vector<CacheBlk*>& evict_blks) override;
+                         std::vector<CacheBlk*>& evict_blks,
+                         const uint64_t type) override;
 
     /**
      * Insert the new block into the cache and update replacement data.

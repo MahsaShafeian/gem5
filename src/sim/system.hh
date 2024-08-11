@@ -112,7 +112,10 @@ class System : public SimObject, public PCEventScope
         deviceMemMap;
 
   public:
-
+    void AddTable(uint64_t start, uint64_t end, uint64_t type);
+    uint64_t getType(uint64_t addr);
+    int end_index = 0;
+    uint64_t type_table[1000][3];
     class Threads
     {
       private:

@@ -107,6 +107,20 @@ SHiP::touch(const std::shared_ptr<ReplacementData>& replacement_data,
 }
 
 void
+SHiP::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+SHiP::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 SHiP::touch(const std::shared_ptr<ReplacementData>& replacement_data)
     const
 {

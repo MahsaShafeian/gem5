@@ -129,6 +129,8 @@ class BaseIndexingPolicy : public SimObject
      * @return entry The entry pointer.
      */
     ReplaceableEntry* getEntry(const uint32_t set, const uint32_t way) const;
+    uint64_t getNumsets() const;
+    uint64_t getNumways() const;
 
     /**
      * Generate the tag from the given address.

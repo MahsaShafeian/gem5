@@ -76,6 +76,22 @@ BaseTags::findBlockBySetAndWay(int set, int way) const
     return indexingPolicy->getEntry(set, way);
 }
 
+ReplaceableEntry*
+BaseTags::getsetway(int set, int way){
+    return findBlockBySetAndWay(set,way);
+}
+uint64_t
+BaseTags::getnumbset(){
+    int numbset = indexingPolicy->getNumsets();
+    return numbset;
+}
+uint64_t
+BaseTags::getnumbway(){
+
+    int numbway = indexingPolicy->getNumways();
+    return numbway;
+}
+
 CacheBlk*
 BaseTags::findBlock(Addr addr, bool is_secure) const
 {

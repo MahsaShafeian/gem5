@@ -77,6 +77,15 @@ BaseIndexingPolicy::getEntry(const uint32_t set, const uint32_t way) const
     return sets[set][way];
 }
 
+uint64_t BaseIndexingPolicy::getNumsets() const
+{
+    return numSets;
+}
+
+uint64_t BaseIndexingPolicy::getNumways() const
+{
+    return assoc;
+}
 void
 BaseIndexingPolicy::setEntry(ReplaceableEntry* entry, const uint64_t index)
 {

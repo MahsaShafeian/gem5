@@ -57,6 +57,7 @@
 #include "mem/cache/mshr.hh"
 #include "mem/cache/prefetch/base.hh"
 #include "mem/cache/queue_entry.hh"
+#include "mem/cache/replacement_policies/smt_rp.hh"
 #include "mem/cache/tags/compressed_tags.hh"
 #include "mem/cache/tags/super_blk.hh"
 #include "params/BaseCache.hh"
@@ -1024,7 +1025,8 @@ BaseCache::updateCompressionData(CacheBlk *&blk, const uint64_t* data,
         CacheBlk *victim = nullptr;
         if (replaceExpansions || is_data_contraction) {
             victim = tags->findVictim(regenerateBlkAddr(blk),
-                blk->isSecure(), compression_size, evict_blks);
+                blk->isSecure(), compression_size, evict_blks,
+                system->getType(regenerateBlkAddr(blk)));
 
             // It is valid to return nullptr if there is no victim
             if (!victim) {
@@ -1303,9 +1305,15 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
+        stats.TotalWrites++;
+        // Addr write_addr = pkt->getAddr();
+        // // std :: cout << name() << " -> ";
+        // std :: cout << "write_addr => " << std::hex <<  write_addr;
+        // std :: cout << " , " <<  pkt->getSize();
+        // // std :: cout << " ," <<  pkt->print()
+        // std :: cout << std :: endl;
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
     }
-
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->isWriteback()) {
@@ -1496,6 +1504,27 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 }
 
 void
+BaseCache::printsetway()
+{
+    std:: cout << "{";
+    for (int i=0; i < tags->getnumbset(); i++){
+        for (int j=0; j < tags->getnumbway(); j++){
+            ReplaceableEntry *blkset = tags->getsetway(i,j);
+            std::cout << "\"" << i  << "-" << j << "\":";
+            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 0);
+            std::cout << " , ";
+            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 1);
+            std::cout << " , ";
+            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 2);
+            std::cout << " , ";
+            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 3);
+        }
+        std::cout << " , ";
+    }
+    std::cout << "\"-1\":0}" << std::endl;
+}
+
+void
 BaseCache::maintainClusivity(bool from_cache, CacheBlk *blk)
 {
     if (from_cache && blk && blk->isValid() &&
@@ -1633,7 +1662,7 @@ BaseCache::allocateBlock(const PacketPtr pkt, PacketList &writebacks)
     // Find replacement victim
     std::vector<CacheBlk*> evict_blks;
     CacheBlk *victim = tags->findVictim(addr, is_secure, blk_size_bits,
-                                        evict_blks);
+                                        evict_blks, system->getType(addr));
 
     // It is valid to return nullptr if there is no victim
     if (!victim)
@@ -2269,6 +2298,8 @@ BaseCache::CacheStats::CacheStats(BaseCache &c)
              "average overall mshr uncacheable latency"),
     ADD_STAT(replacements, statistics::units::Count::get(),
              "number of replacements"),
+    ADD_STAT(TotalWrites, statistics::units::Count::get(),
+             "number of Writes"),
     ADD_STAT(dataExpansions, statistics::units::Count::get(),
              "number of data expansions"),
     ADD_STAT(dataContractions, statistics::units::Count::get(),
@@ -2502,6 +2533,7 @@ BaseCache::CacheStats::regStats()
 
     dataExpansions.flags(nozero | nonan);
     dataContractions.flags(nozero | nonan);
+    TotalWrites.flags(nozero | nonan);
 }
 
 void

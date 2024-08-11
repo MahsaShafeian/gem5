@@ -79,6 +79,31 @@ class Base : public SimObject
     }
     virtual void touch(const std::shared_ptr<ReplacementData>&
         replacement_data) const = 0;
+    /**
+     * Update replacement data.
+     *
+     * @param replacement_data Replacement data to be touched.
+     * @param pkt Packet that generated this access.
+     */
+    virtual void touchBit(const std::shared_ptr<ReplacementData>&
+                          replacement_data,
+                          const PacketPtr pkt = nullptr) const
+    {
+        touchBit(replacement_data, pkt);
+    }
+     /**
+     * Update replacement data.
+     *
+     * @param replacement_data Replacement data to be touched.
+     *
+     */
+    virtual uint64_t getheat(const std::shared_ptr<ReplacementData>&
+                             replacement_data,
+                    const int i) const
+    {
+        return getheat(replacement_data, i);
+    }
+
 
     /**
      * Reset replacement data. Used when it's holder is inserted/validated.
@@ -101,7 +126,8 @@ class Base : public SimObject
      * @return Replacement entry to be replaced.
      */
     virtual ReplaceableEntry* getVictim(
-                           const ReplacementCandidates& candidates) const = 0;
+                           const ReplacementCandidates& candidates,
+                           const uint64_t type) const = 0;
 
     /**
      * Instantiate a replacement data entry.

@@ -217,6 +217,11 @@ class BaseTags : public ClockedObject
         return addr & ~blkMask;
     }
 
+    ReplaceableEntry*  getsetway(int set, int way);
+    uint64_t getnumbset();
+    uint64_t getnumbway();
+
+
     /**
      * Calculate the block offset of an address.
      * @param addr the address to get the offset of.
@@ -280,7 +285,8 @@ class BaseTags : public ClockedObject
      */
     virtual CacheBlk* findVictim(Addr addr, const bool is_secure,
                                  const std::size_t size,
-                                 std::vector<CacheBlk*>& evict_blks) = 0;
+                                 std::vector<CacheBlk*>& evict_blks,
+                                 const uint64_t type) = 0;
 
     /**
      * Access block and update replacement data. May not succeed, in which case
@@ -293,6 +299,13 @@ class BaseTags : public ClockedObject
      * @return Pointer to the cache block if found.
      */
     virtual CacheBlk* accessBlock(const PacketPtr pkt, Cycles &lat) = 0;
+    /**
+     * get the block heat from SMTRP
+     * @param i
+     * @param blk block.
+     * @return heat block.
+     */
+    virtual uint64_t getblkheat(const CacheBlk *blk ,const int i) const = 0;
 
     /**
      * Generate the tag from the given address.

@@ -75,6 +75,18 @@ BRRIP::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
+BRRIP::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+uint64_t
+BRRIP::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+void
 BRRIP::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
     std::shared_ptr<BRRIPReplData> casted_replacement_data =
@@ -93,7 +105,8 @@ BRRIP::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-BRRIP::getVictim(const ReplacementCandidates& candidates) const
+BRRIP::getVictim(const ReplacementCandidates& candidates,
+                 const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

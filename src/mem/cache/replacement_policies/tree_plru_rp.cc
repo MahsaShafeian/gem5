@@ -160,6 +160,20 @@ const
 }
 
 void
+TreePLRU::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+                   const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+TreePLRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 TreePLRU::reset(const std::shared_ptr<ReplacementData>& replacement_data)
 const
 {
@@ -168,7 +182,8 @@ const
 }
 
 ReplaceableEntry*
-TreePLRU::getVictim(const ReplacementCandidates& candidates) const
+TreePLRU::getVictim(const ReplacementCandidates& candidates,
+                    const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

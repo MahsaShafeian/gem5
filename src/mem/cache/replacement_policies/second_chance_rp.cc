@@ -77,6 +77,21 @@ SecondChance::touch(
 }
 
 void
+SecondChance::touchBit(
+    const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+SecondChance::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 SecondChance::reset(
     const std::shared_ptr<ReplacementData>& replacement_data) const
 {
@@ -88,7 +103,8 @@ SecondChance::reset(
 }
 
 ReplaceableEntry*
-SecondChance::getVictim(const ReplacementCandidates& candidates) const
+SecondChance::getVictim(const ReplacementCandidates& candidates,
+                        const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);
@@ -112,7 +128,7 @@ SecondChance::getVictim(const ReplacementCandidates& candidates) const
     bool search_victim = true;
     while (search_victim) {
         // Do a FIFO victim search
-        victim = FIFO::getVictim(candidates);
+        victim = FIFO::getVictim(candidates, type);
 
         // Cast victim's replacement data for code readability
         std::shared_ptr<SecondChanceReplData> victim_replacement_data =

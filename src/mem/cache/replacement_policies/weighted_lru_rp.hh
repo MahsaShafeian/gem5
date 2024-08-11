@@ -67,7 +67,10 @@ class WeightedLRU : public LRU
     using Base::touch;
     void touch(const std::shared_ptr<ReplacementData>& replacement_data,
                                         int occupancy) const;
-
+    void touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+        const PacketPtr pkt = nullptr) const override;
+    uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+                    const int i) const override;
     /**
      * Instantiate a replacement data entry.
      *
@@ -82,7 +85,9 @@ class WeightedLRU : public LRU
      * @return Replacement entry to be replaced.
      */
     ReplaceableEntry* getVictim(const ReplacementCandidates&
-                                              candidates) const override;
+                                              candidates,
+                                              const uint64_t type)
+                                              const override;
 };
 
 } // namespace replacement_policy

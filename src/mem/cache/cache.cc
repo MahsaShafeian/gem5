@@ -948,6 +948,13 @@ Cache::serviceMSHRTargets(MSHR *mshr, const PacketPtr pkt, CacheBlk *blk)
 PacketPtr
 Cache::evictBlock(CacheBlk *blk)
 {
+    // std::string pName = name();
+    // if (pName.compare("system.cpu.dcache") == 0){
+    //     // std :: cout << name() << " -> ";
+    //     std :: cout << "evict_addr => " << std::hex << blk;
+    //     // std :: cout <<  "," << blk->print()
+    //     std :: cout << std :: endl;
+    // }
     PacketPtr pkt = (blk->isSet(CacheBlk::DirtyBit) || writebackClean) ?
         writebackBlk(blk) : cleanEvictBlk(blk);
 

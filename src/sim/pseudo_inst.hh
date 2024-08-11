@@ -50,6 +50,7 @@
 #include "base/types.hh" // For Tick and Addr data types.
 #include "cpu/thread_context.hh"
 #include "debug/PseudoInst.hh"
+#include "mem/cache/cache.hh"
 #include "sim/guest_abi.hh"
 
 namespace gem5
@@ -92,8 +93,10 @@ void switchcpu(ThreadContext *tc);
 void workbegin(ThreadContext *tc, uint64_t workid, uint64_t threadid);
 void workend(ThreadContext *tc, uint64_t workid, uint64_t threadid);
 void m5Syscall(ThreadContext *tc);
+void settype(ThreadContext *tc, uint64_t start, uint64_t end, uint64_t type);
 void togglesync(ThreadContext *tc);
 void triggerWorkloadEvent(ThreadContext *tc);
+void virtualtophysical(ThreadContext *tc, uint64_t viradd);
 
 /**
  * Execute a decoded M5 pseudo instruction
@@ -205,6 +208,14 @@ pseudoInstWork(ThreadContext *tc, uint8_t func, uint64_t &result)
       case M5OP_PANIC:
         panic("M5 panic instruction called at %s\n", tc->pcState());
 
+      case M5OP_SET_TYPE:
+        invokeSimcall<ABI>(tc, settype);
+        return true;
+
+      case M5OP_VIRTUAL_PHYSICAL:
+        invokeSimcall<ABI>(tc, virtualtophysical);
+        return true;
+
       case M5OP_WORK_BEGIN:
         invokeSimcall<ABI>(tc, workbegin);
         return true;
@@ -214,8 +225,8 @@ pseudoInstWork(ThreadContext *tc, uint8_t func, uint64_t &result)
         return true;
 
       case M5OP_RESERVED1:
-      case M5OP_RESERVED2:
-      case M5OP_RESERVED3:
+      // case M5OP_RESERVED2:
+      // case M5OP_RESERVED3:
       case M5OP_RESERVED4:
       case M5OP_RESERVED5:
         warn("Unimplemented m5 op (%#x)\n", func);

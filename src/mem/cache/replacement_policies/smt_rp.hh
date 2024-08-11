@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, 2020 Inria
+ * Copyright (c) 2018-2020 Inria
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,97 +26,96 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __MEM_CACHE_REPLACEMENT_POLICIES_DUELING_RP_HH__
-#define __MEM_CACHE_REPLACEMENT_POLICIES_DUELING_RP_HH__
+/**
+ * @file
+ * Declaration of a Least Recently Used replacement policy.
+ * The victim is chosen using the last touch timestamp.
+ */
 
-#include <memory>
+#ifndef __MEM_CACHE_REPLACEMENT_POLICIES_SMT_RP_HH__
+#define __MEM_CACHE_REPLACEMENT_POLICIES_SMT_RP_HH__
 
-#include "base/compiler.hh"
-#include "base/statistics.hh"
 #include "mem/cache/replacement_policies/base.hh"
-#include "mem/cache/tags/dueling.hh"
 
 namespace gem5
 {
 
-struct DuelingRPParams;
+struct SMTRPParams;
 
 namespace replacement_policy
 {
 
-/**
- * This replacement policy duels two replacement policies to find out which
- * one provides the best results. A policy is said to have the best results
- * when it has a lower number of misses.
- */
-class Dueling : public Base
+class SMT : public Base
 {
   protected:
-    /**
-     * Dueler-specific implementation of replacement data. Contains all
-     * sub-replacement policies' replacement data.
-     */
-    struct DuelerReplData : ReplacementData, Dueler
+    /** SMT-specific implementation of replacement data. */
+    struct SMTReplData : ReplacementData
     {
-        std::shared_ptr<ReplacementData> replDataA;
-        std::shared_ptr<ReplacementData> replDataB;
-
-        /** Default constructor. Initialize sub-replacement data. */
-        DuelerReplData(const std::shared_ptr<ReplacementData>& repl_data_a,
-            const std::shared_ptr<ReplacementData>& repl_data_b)
-          : ReplacementData(), Dueler(), replDataA(repl_data_a),
-            replDataB(repl_data_b)
-        {
-        }
+        /** Tick on which the entry was last touched. */
+        Tick lastTouchTick;
+        uint64_t type = 0x0000;
+        Tick curtime_sub0, curtime_sub1, curtime_sub2, curtime_sub3;
+        Tick prevtime_sub0, prevtime_sub1, prevtime_sub2, prevtime_sub3;
+        uint64_t heat0 = 85, heat1 = 85, heat2 = 85, heat3 = 85;
+        /**
+         * Default constructor. Invalidate data.
+         */
+        SMTReplData() : lastTouchTick(0) {}
     };
 
-    /** Sub-replacement policy used in this multiple container. */
-    Base* const replPolicyA;
-    /** Sub-replacement policy used in this multiple container. */
-    Base* const replPolicyB;
+  public:
+    typedef SMTRPParams Params;
+    SMT(const Params &p);
+    ~SMT() = default;
 
     /**
-     * A dueling monitor that decides which is the best sub-policy based on
-     * their number of misses.
+     * Invalidate replacement data to set it as the next probable victim.
+     * Sets its last touch tick as the starting tick.
+     *
+     * @param replacement_data Replacement data to be invalidated.
      */
-    mutable DuelingMonitor duelingMonitor;
-
-    mutable struct DuelingStats : public statistics::Group
-    {
-        DuelingStats(statistics::Group* parent);
-
-        /** Number of times A was selected on victimization. */
-        statistics::Scalar selectedA;
-
-        /** Number of times B was selected on victimization. */
-        statistics::Scalar selectedB;
-    } duelingStats;
-
-  public:
-    PARAMS(DuelingRP);
-    Dueling(const Params &p);
-    ~Dueling() = default;
-
     void invalidate(const std::shared_ptr<ReplacementData>& replacement_data)
                                                                     override;
-    void touch(const std::shared_ptr<ReplacementData>& replacement_data,
-        const PacketPtr pkt) override;
+
+    /**
+     * Touch an entry to update its replacement data.
+     * Sets its last touch tick as the current tick.
+     *
+     * @param replacement_data Replacement data to be touched.
+     */
     void touch(const std::shared_ptr<ReplacementData>& replacement_data) const
                                                                      override;
     void touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
-        const PacketPtr pkt = nullptr) const override;
+                  const PacketPtr pkt = nullptr) const override;
     uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
                     const int i) const override;
-    void reset(const std::shared_ptr<ReplacementData>& replacement_data,
-        const PacketPtr pkt) override;
+    /**
+     * Reset replacement data. Used when an entry is inserted.
+     * Sets its last touch tick as the current tick.
+     *
+     * @param replacement_data Replacement data to be reset.
+     */
     void reset(const std::shared_ptr<ReplacementData>& replacement_data) const
                                                                      override;
+
+    /**
+     * Find replacement victim using SMT timestamps.
+     *
+     * @param candidates Replacement candidates, selected by indexing policy.
+     * @return Replacement entry to be replaced.
+     */
     ReplaceableEntry* getVictim(const ReplacementCandidates& candidates,
-        const uint64_t type) const override;
+                                const uint64_t type) const override;
+
+    /**
+     * Instantiate a replacement data entry.
+     *
+     * @return A shared pointer to the new replacement data.
+     */
     std::shared_ptr<ReplacementData> instantiateEntry() override;
 };
 
 } // namespace replacement_policy
 } // namespace gem5
 
-#endif // __MEM_CACHE_REPLACEMENT_POLICIES_DUELING_RP_HH__
+#endif // __MEM_CACHE_REPLACEMENT_POLICIES_SMT_RP_HH__

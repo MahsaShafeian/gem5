@@ -62,6 +62,20 @@ MRU::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
+MRU::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+MRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 MRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
     // Set last touch timestamp
@@ -70,7 +84,8 @@ MRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-MRU::getVictim(const ReplacementCandidates& candidates) const
+MRU::getVictim(const ReplacementCandidates& candidates,
+                const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

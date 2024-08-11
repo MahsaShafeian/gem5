@@ -59,6 +59,20 @@ LFU::touch(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 void
+LFU::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
+    const PacketPtr pkt) const
+{
+
+}
+
+uint64_t
+LFU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
+void
 LFU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
     // Reset reference count
@@ -66,7 +80,8 @@ LFU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 }
 
 ReplaceableEntry*
-LFU::getVictim(const ReplacementCandidates& candidates) const
+LFU::getVictim(const ReplacementCandidates& candidates,
+                const uint64_t type) const
 {
     // There must be at least one replacement candidate
     assert(candidates.size() > 0);

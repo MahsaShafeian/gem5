@@ -86,7 +86,7 @@ AssociativeSet<Entry>::findVictim(Addr addr)
     const std::vector<ReplaceableEntry*> selected_entries =
         indexingPolicy->getPossibleEntries(addr);
     Entry* victim = static_cast<Entry*>(replacementPolicy->getVictim(
-                            selected_entries));
+                            selected_entries, 0x1));
     // There is only one eviction for this replacement
     invalidate(victim);
     return victim;

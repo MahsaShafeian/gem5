@@ -167,6 +167,9 @@ SectorTags::accessBlock(const PacketPtr pkt, Cycles &lat)
         // Update replacement data of accessed block, which is shared with
         // the whole sector it belongs to
         replacementPolicy->touch(sector_blk->replacementData, pkt);
+        if (pkt->isWrite()){
+            replacementPolicy->touchBit(sector_blk->replacementData, pkt);
+        }
     }
 
     // The tag lookup latency is the same for a hit or a miss
@@ -274,7 +277,7 @@ SectorTags::findBlock(Addr addr, bool is_secure) const
 
 CacheBlk*
 SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
-                       std::vector<CacheBlk*>& evict_blks)
+                       std::vector<CacheBlk*>& evict_blks, const uint64_t type)
 {
     // Get possible entries to be victimized
     const std::vector<ReplaceableEntry*> sector_entries =
@@ -295,7 +298,7 @@ SectorTags::findVictim(Addr addr, const bool is_secure, const std::size_t size,
     if (victim_sector == nullptr){
         // Choose replacement victim from replacement candidates
         victim_sector = static_cast<SectorBlk*>(replacementPolicy->getVictim(
-                                                sector_entries));
+                                                sector_entries, type));
     }
 
     // Get the entry of the victim block within the sector
