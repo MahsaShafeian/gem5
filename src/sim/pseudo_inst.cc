@@ -477,9 +477,9 @@ settype(ThreadContext *tc, uint64_t start, uint64_t end, uint64_t type)
     tc->getProcessPtr()->pTable->translate(start, spaddr);
     Addr epaddr;
     tc->getProcessPtr()->pTable->translate(end, epaddr);
-    std::cout << "psaddr:" << std::hex << spaddr;
-    std::cout << ", peaddr:" << std::hex << epaddr;
-    std::cout << ", type" << type << std::endl;
+    // std::cout << "psaddr:" << std::hex << spaddr;
+    // std::cout << ", peaddr:" << std::hex << epaddr;
+    // std::cout << ", type" << type << std::endl;
     sys->AddTable(spaddr, epaddr, type);
     // Cache::AddTable(0, 0, 0);
 }
@@ -489,9 +489,9 @@ virtualtophysical(ThreadContext *tc, uint64_t viradd)
 {
     Addr phyaddr;
     tc->getProcessPtr()->pTable->translate(viradd, phyaddr);
-    std :: cout << "viradd-dijkstra:" << std::hex << viradd;
-    std :: cout << " -> phyaddr-dijkstra:" << std::hex << phyaddr;
-    std :: cout << std::endl;
+    // std :: cout << "viradd-dijkstra:" << std::hex << viradd;
+    // std :: cout << " -> phyaddr-dijkstra:" << std::hex << phyaddr;
+    // std :: cout << std::endl;
 }
 
 void

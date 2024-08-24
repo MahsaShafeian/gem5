@@ -951,7 +951,8 @@ Cache::evictBlock(CacheBlk *blk)
     // std::string pName = name();
     // if (pName.compare("system.cpu.dcache") == 0){
     //     // std :: cout << name() << " -> ";
-    //     std :: cout << "evict_addr => " << std::hex << blk;
+    //     std :: cout << "evict_addr => ";
+    //     std::cout << std::hex << regenerateBlkAddr(blk);
     //     // std :: cout <<  "," << blk->print()
     //     std :: cout << std :: endl;
     // }

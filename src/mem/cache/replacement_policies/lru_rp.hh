@@ -53,7 +53,9 @@ class LRU : public Base
     {
         /** Tick on which the entry was last touched. */
         Tick lastTouchTick;
-
+        Tick curtime_sub0, curtime_sub1, curtime_sub2, curtime_sub3;
+        Tick prevtime_sub0, prevtime_sub1, prevtime_sub2, prevtime_sub3;
+        uint64_t heat0 = 85, heat1 = 85, heat2 = 85, heat3 = 85;
         /**
          * Default constructor. Invalidate data.
          */
@@ -86,7 +88,8 @@ class LRU : public Base
         const PacketPtr pkt = nullptr) const override;
     uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
                     const int i) const override;
-
+    uint64_t gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+                    const int i) const override;
     /**
      * Reset replacement data. Used when an entry is inserted.
      * Sets its last touch tick as the current tick.

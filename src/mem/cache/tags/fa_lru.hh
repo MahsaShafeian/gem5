@@ -181,7 +181,17 @@ class FALRU : public BaseTags
     {
         return 0;
     }
-
+    /**
+     * get the block time from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return time block.
+     */
+    uint64_t getblktime(const CacheBlk *blk ,const int i) const override
+    {
+        return 0;
+    }
     /**
      * Access block and update replacement data.  May not succeed, in which
      * case nullptr pointer is returned.  This has all the implications of a

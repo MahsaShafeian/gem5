@@ -65,15 +65,213 @@ void
 LRU::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
     const PacketPtr pkt) const
 {
+    std::string pName = name();
+    if ((pkt->isWrite())&&
+    (pName.compare("system.cpu.dcache.replacement_policy") == 0))
+    {
+        Addr touched_addr = pkt->getAddr();
+        int address = int(touched_addr);
+        // int blk_addr = ((address > 6) << 6);
+        int offset = address & 0x3f;
+        int subblock_num = (offset) / 0x10;
+
+        if (subblock_num >= 0 && subblock_num < 1)
+        {
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub0 = curTick();
+
+            uint64_t subtraction = ((std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->curtime_sub0) -
+                                    (std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->prevtime_sub0));
+
+            if (subtraction <= 0x2710){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat0 = 0x87;
+            }
+            if ((subtraction > 0x2710)&& (subtraction <= 0x4e20)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat0 = 0x69;
+            }
+            if ((subtraction > 0x4e20)&& (subtraction <= 0x7530)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat0 = 0x5f;
+            }
+            if ((subtraction > 0x7530)&& (subtraction <= 0x9c40)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat0 = 0x5a;
+            }
+            if (subtraction > 0x9c40){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat0 = 0x55;
+            }
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub0 =
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub0;
+        }
+        if (subblock_num >= 1 && subblock_num < 2)
+        {
+
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub1 = curTick();
+
+            uint64_t subtraction = ((std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->curtime_sub1) -
+                                    (std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->prevtime_sub1));
+
+            if (subtraction <= 0x2710){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat1 = 0x87;
+            }
+            if ((subtraction > 0x2710)&& (subtraction <= 0x4e20)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat1 = 0x69;
+            }
+            if ((subtraction > 0x4e20)&& (subtraction <= 0x7530)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat1 = 0x5f;
+            }
+            if ((subtraction > 0x7530)&& (subtraction <= 0x9c40)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat1 = 0x5a;
+            }
+            if (subtraction > 0x9c40){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat1 = 0x55;
+            }
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub1 =
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub1;
+
+        }
+        if (subblock_num >= 2 && subblock_num < 3)
+        {
+
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub2 = curTick();
+
+            uint64_t subtraction = ((std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->curtime_sub2) -
+                                    (std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->prevtime_sub2));
+
+            if (subtraction <= 0x2710){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat2 = 0x87;
+            }
+            if ((subtraction > 0x2710)&& (subtraction <= 0x4e20)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat2 = 0x69;
+            }
+            if ((subtraction > 0x4e20)&& (subtraction <= 0x7530)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat2 = 0x5f;
+            }
+            if ((subtraction > 0x7530)&& (subtraction <= 0x9c40)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat2 = 0x5a;
+            }
+            if (subtraction > 0x9c40){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat2 = 0x55;
+            }
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub2 =
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub2;
+        }
+        if (subblock_num >= 3)
+        {
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub3 = curTick();
+
+            uint64_t subtraction = ((std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->curtime_sub3) -
+                                    (std::static_pointer_cast<LRUReplData>
+                                    (replacement_data)->prevtime_sub3));
+            if (subtraction <= 0x2710){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat3 = 0x87;
+            }
+            if ((subtraction > 0x2710)&& (subtraction <= 0x4e20)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat3 = 0x69;
+            }
+            if ((subtraction > 0x4e20)&& (subtraction <= 0x7530)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat3 = 0x5f;
+            }
+            if ((subtraction > 0x7530)&& (subtraction <= 0x9c40)){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat3 = 0x5a;
+            }
+            if (subtraction > 0x9c40){
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->heat3 = 0x55;
+            }
+
+            std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub3 =
+                std::static_pointer_cast<LRUReplData>
+                (replacement_data)->curtime_sub3;
+
+        }
+    }
 }
 
 uint64_t
 LRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
             const int i) const
 {
-    return 0;
+    if (i==0){
+        int heat0=std::static_pointer_cast<LRUReplData>(
+            replacement_data)->heat0;
+        return heat0;
+    }
+    if (i==1){
+        int heat1=std::static_pointer_cast<LRUReplData>(
+            replacement_data)->heat1;
+        return heat1;
+    }
+    if (i==2){
+        int heat2=std::static_pointer_cast<LRUReplData>(
+            replacement_data)->heat2;
+        return heat2;
+    }
+    else{
+        int heat3=std::static_pointer_cast<LRUReplData>(
+            replacement_data)->heat3;
+        return heat3;
+    }
 }
-
+uint64_t
+LRU::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    if (i==0){
+        int time0=std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub0;
+        return time0;
+    }
+    if (i==1){
+        int time1=std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub1;
+        return time1;
+    }
+    if (i==2){
+        int time2=std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub2;
+        return time2;
+    }
+    else{
+        int time3=std::static_pointer_cast<LRUReplData>
+                (replacement_data)->prevtime_sub3;
+        return time3;
+    }
+}
 void
 LRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {

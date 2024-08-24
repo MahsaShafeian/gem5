@@ -143,7 +143,8 @@ class SHiP : public BRRIP
         const PacketPtr pkt = nullptr) const override;
     uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
                     const int i) const override;
-
+    uint64_t gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+                    const int i) const override;
     /**
      * Reset replacement data. Used when an entry is inserted.
      * Updates predictor and assigns RRPV values of Table 3.

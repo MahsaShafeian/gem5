@@ -103,7 +103,18 @@ class Base : public SimObject
     {
         return getheat(replacement_data, i);
     }
-
+    /**
+     * Update replacement data.
+     *
+     * @param replacement_data Replacement data to be touched.
+     *
+     */
+    virtual uint64_t gettime(const std::shared_ptr<ReplacementData>&
+                             replacement_data,
+                    const int i) const
+    {
+        return gettime(replacement_data, i);
+    }
 
     /**
      * Reset replacement data. Used when it's holder is inserted/validated.

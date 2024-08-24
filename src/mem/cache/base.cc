@@ -42,8 +42,9 @@
  * @file
  * Definition of BaseCache functions.
  */
-
 #include "mem/cache/base.hh"
+
+#include <iomanip>
 
 #include "base/compiler.hh"
 #include "base/logging.hh"
@@ -1306,19 +1307,36 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
         stats.TotalWrites++;
-        // Addr write_addr = pkt->getAddr();
-        // // std :: cout << name() << " -> ";
-        // std :: cout << "write_addr => " << std::hex <<  write_addr;
-        // std :: cout << " , " <<  pkt->getSize();
+        Addr write_addr = pkt->getAddr();
+        std::string pName = name();
+        if (pName.compare("system.cpu.dcache") == 0){
+            writecount ++;
+            // std :: cout << "write_addr => " << std::hex <<  write_addr;
+            // std :: cout << " , " <<  pkt->getSize();
+            // std :: cout << std :: endl;
+            if (blk)
+                printmaxheat(blk);
+
+        }
+        // if (writecount==1000)
+        // {
+        //     printheat();
+        //     writecount= 0;
+        // }
+
+        // }
         // // std :: cout << " ," <<  pkt->print()
-        // std :: cout << std :: endl;
+
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
     }
     // Writeback handling is special case.  We can write the block into
     // the cache without having a writeable copy (or any copy at all).
     if (pkt->isWriteback()) {
         assert(blkSize == pkt->getSize());
-
+        // std::string pName = name();
+        // if (pName.compare("system.cpu.dcache") == 0){
+        //     writecount ++;
+        // }
         // we could get a clean writeback while we are having
         // outstanding accesses to a block, do the simple thing for
         // now and drop the clean writeback so that we do not upset
@@ -1377,7 +1395,6 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         updateBlockData(blk, pkt, has_old_data);
         DPRINTF(Cache, "%s new state is %s\n", __func__, blk->print());
         incHitCount(pkt);
-
         // When the packet metadata arrives, the tag lookup will be done while
         // the payload is arriving. Then the block will be ready to access as
         // soon as the fill is done
@@ -1468,6 +1485,11 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // OK to satisfy access
         incHitCount(pkt);
 
+        // std::cout << "blk_add: " << std::hex << pkt->getAddr();
+        // std::cout << " , set: " << blk->getSet();
+        // std::cout << " , way: " << blk->getWay();
+        // std::cout << std::endl;
+
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
@@ -1504,26 +1526,104 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
 }
 
 void
-BaseCache::printsetway()
+BaseCache::printmaxheat(CacheBlk *blk)
+{
+    std:: cout << "{";
+    std:: cout << "\"";
+    std:: cout << blk -> getSet();
+    std::cout << "-";
+    std:: cout << blk -> getWay();
+    std::cout << "\": " << "[";
+    std::cout << tags->getblkheat(blk , 0);
+    std::cout << " , ";
+    std::cout << tags->getblkheat(blk , 1);
+    std::cout << " , ";
+    std::cout << tags->getblkheat(blk , 2);
+    std::cout << " , ";
+    std::cout << tags->getblkheat(blk , 3);
+    std::cout << "]" <<"}, ";
+    std::cout << std::endl;
+}
+
+void
+BaseCache::printheat()
 {
     std:: cout << "{";
     for (int i=0; i < tags->getnumbset(); i++){
         for (int j=0; j < tags->getnumbway(); j++){
-            ReplaceableEntry *blkset = tags->getsetway(i,j);
-            std::cout << "\"" << i  << "-" << j << "\":";
-            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 0);
+            ReplaceableEntry *blksetway = tags->getsetway(i,j);
+            curtime = curTick();
+            std::cout << "\"" << i  << "-" << j << "\": ";
+            std::cout << "[";
+
+            ticktonsec = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blksetway) , 0))) * 1e-3;
+            ticktonsec = ticktonsec * 1e-9;
+            std::cout << (85 + (((tags->getblkheat(
+                static_cast<CacheBlk *>(blksetway) , 0)) - 85) *
+                exp (-(ticktonsec/0.00002))));
             std::cout << " , ";
-            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 1);
+            ticktonsec = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blksetway) , 1))) * 1e-3;
+            ticktonsec = ticktonsec * 1e-9;
+            std::cout << (85 + (((tags->getblkheat(
+                static_cast<CacheBlk *>(blksetway) , 1)) - 85) *
+                exp (-(ticktonsec/0.00002))));
             std::cout << " , ";
-            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 2);
+            ticktonsec = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blksetway) , 2))) * 1e-3;
+            ticktonsec = ticktonsec * 1e-9;
+            std::cout << (85 + (((tags->getblkheat(
+                static_cast<CacheBlk *>(blksetway) , 2)) - 85) *
+                exp (-(ticktonsec/0.00002))));
             std::cout << " , ";
-            std::cout << tags->getblkheat(static_cast<CacheBlk *>(blkset) , 3);
+            ticktonsec = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blksetway) , 3))) * 1e-3;
+            ticktonsec = ticktonsec * 1e-9;
+            std::cout << (85 + (((tags->getblkheat(
+                static_cast<CacheBlk *>(blksetway) , 3)) - 85) *
+                exp (-(ticktonsec/0.00002))));
+
+            std::cout << "]" << " , ";
         }
-        std::cout << " , ";
+
     }
-    std::cout << "\"-1\":0}" << std::endl;
+    std::cout << "}, " << std::endl;
 }
 
+void
+BaseCache::printwritetime()
+{
+    std:: cout << "{";
+    for (int i=0; i < 128; i++){
+        for (int j=0; j < 4; j++){
+            ReplaceableEntry *blkset = tags->getsetway(i,j);
+            curtime = curTick();
+
+            writetime = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blkset) , 0)))* 1e-3;
+            writetime = writetime * 1e-9;
+            std::cout << writetime;
+            std::cout << " , ";
+            writetime = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blkset) , 1)))* 1e-3;
+            writetime = writetime * 1e-9;
+            std::cout << writetime;
+            std::cout << " , ";
+            writetime = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blkset) , 2)))* 1e-3;
+            writetime = writetime * 1e-9;
+            std::cout << writetime;
+            std::cout << " , ";
+            writetime = (curtime - (tags->getblktime(
+                static_cast<CacheBlk *>(blkset) , 3)))* 1e-3;
+            writetime = writetime * 1e-9;
+            std::cout << writetime;
+            std::cout << " , ";
+        }
+    }
+    std::cout << "}, " << std::endl;
+}
 void
 BaseCache::maintainClusivity(bool from_cache, CacheBlk *blk)
 {

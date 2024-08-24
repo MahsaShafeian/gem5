@@ -74,7 +74,12 @@ MRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
 {
     return 0;
 }
-
+uint64_t
+MRU::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
 void
 MRU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {

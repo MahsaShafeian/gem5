@@ -71,7 +71,12 @@ LFU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
 {
     return 0;
 }
-
+uint64_t
+LFU::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
 void
 LFU::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {

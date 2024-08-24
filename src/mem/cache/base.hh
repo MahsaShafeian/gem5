@@ -114,7 +114,10 @@ class BaseCache : public ClockedObject
         Blocked_NoTargets,
         NUM_BLOCKED_CAUSES
     };
-
+    uint64_t writecount=0;
+    double ticktonsec =0;
+    uint64_t curtime=0;
+    double writetime=0;
     /**
      * A data contents update is composed of the updated block's address,
      * the old contents, and the new contents.
@@ -486,7 +489,15 @@ class BaseCache : public ClockedObject
      */
     virtual bool access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
                         PacketList &writebacks);
-    void printsetway();
+    void printheat();
+        /**
+     * Calculate access latency in ticks given a tag lookup latency, and
+     * whether access was a hit or miss.
+     *
+     * @param blk The cache block that was accessed.
+     */
+    void printmaxheat(CacheBlk *blk);
+    void printwritetime();
     /*
      * Handle a timing request that hit in the cache
      *

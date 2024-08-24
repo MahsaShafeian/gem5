@@ -71,6 +71,8 @@ class WeightedLRU : public LRU
         const PacketPtr pkt = nullptr) const override;
     uint64_t getheat(const std::shared_ptr<ReplacementData>& replacement_data,
                     const int i) const override;
+    uint64_t gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+                    const int i) const override;
     /**
      * Instantiate a replacement data entry.
      *

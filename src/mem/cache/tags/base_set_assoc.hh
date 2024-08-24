@@ -170,6 +170,17 @@ class BaseSetAssoc : public BaseTags
         return replacementPolicy->getheat(blk->replacementData, i);
     }
     /**
+     * get the block time from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return heat block.
+     */
+    uint64_t getblktime(const CacheBlk *blk ,const int i) const override
+    {
+        return replacementPolicy->gettime(blk->replacementData, i);
+    }
+    /**
      * Find replacement victim based on address. The list of evicted blocks
      * only contains the victim.
      *

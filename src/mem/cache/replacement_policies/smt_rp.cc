@@ -65,22 +65,25 @@ void
 SMT::touchBit(const std::shared_ptr<ReplacementData>& replacement_data,
               const PacketPtr pkt) const
 {
-    if (pkt->isWrite()) {
+    std::string pName = name();
+    if ((pkt->isWrite())&&
+    (pName.compare("system.cpu.dcache.replacement_policy") == 0))
+    {
         Addr touched_addr = pkt->getAddr();
         int address = int(touched_addr);
-        int blk_addr = ((address >> 6) << 6);
+        // int blk_addr = ((address >> 6) << 6);
         int offset = address & 0x3f;
         int subblock_num = (offset) / 0x10;
         // std :: cout << "blk_addr => " << blk_addr;
-        std :: cout << "write_addr => " << touched_addr;
+        // std :: cout << "write_addr => " << touched_addr;
         // std :: cout << " , " << pkt->print();
         // std :: cout << std :: endl;
         // std :: cout << "touched_addr => " << touched_addr;
-        // std :: cout << ", touched_block_area=> ";
+        // std :: cout << "touched_block_area=> ";
         // std :: cout << std:: hex;
         // std :: cout << (int)std::static_pointer_cast<SMTReplData>
         //                 (replacement_data)->type;
-        std :: cout << std :: endl;
+        // std :: cout << std :: endl;
 
         if (subblock_num >= 0 && subblock_num < 1)
         {
@@ -320,7 +323,31 @@ SMT::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
         return heat3;
     }
 }
-
+uint64_t
+SMT::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    if (i==0){
+        int time0=std::static_pointer_cast<SMTReplData>
+                (replacement_data)->prevtime_sub0;
+        return time0;
+    }
+    if (i==1){
+        int time1=std::static_pointer_cast<SMTReplData>
+                (replacement_data)->prevtime_sub1;
+        return time1;
+    }
+    if (i==2){
+        int time2=std::static_pointer_cast<SMTReplData>
+                (replacement_data)->prevtime_sub2;
+        return time2;
+    }
+    else{
+        int time3=std::static_pointer_cast<SMTReplData>
+                (replacement_data)->prevtime_sub3;
+        return time3;
+    }
+}
 void
 SMT::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {

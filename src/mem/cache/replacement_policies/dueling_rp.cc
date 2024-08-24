@@ -88,7 +88,12 @@ Dueling::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
 {
     return 0;
 }
-
+uint64_t
+Dueling::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
 void
 Dueling::reset(const std::shared_ptr<ReplacementData>& replacement_data,
     const PacketPtr pkt)

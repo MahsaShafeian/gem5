@@ -165,7 +165,17 @@ class SectorTags : public BaseTags
     {
         return 0;
     }
-
+    /**
+     * get the block time from SMTRP
+     *
+     * @param i
+     * @param blk block.
+     * @return time block.
+     */
+    uint64_t getblktime(const CacheBlk *blk ,const int i) const override
+    {
+        return 0;
+    }
     /**
      * Finds the given address in the cache, do not update replacement data.
      * i.e. This is a no-side-effect find of a block.

@@ -306,7 +306,13 @@ class BaseTags : public ClockedObject
      * @return heat block.
      */
     virtual uint64_t getblkheat(const CacheBlk *blk ,const int i) const = 0;
-
+    /**
+     * get the block time from SMTRP
+     * @param i
+     * @param blk block.
+     * @return time block.
+     */
+    virtual uint64_t getblktime(const CacheBlk *blk ,const int i) const = 0;
     /**
      * Generate the tag from the given address.
      *

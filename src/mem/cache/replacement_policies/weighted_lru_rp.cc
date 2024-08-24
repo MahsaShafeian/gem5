@@ -70,6 +70,13 @@ WeightedLRU::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
     return 0;
 }
 
+uint64_t
+WeightedLRU::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
+
 ReplaceableEntry*
 WeightedLRU::getVictim(const ReplacementCandidates& candidates,
                         const uint64_t type) const

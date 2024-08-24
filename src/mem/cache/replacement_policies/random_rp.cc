@@ -71,7 +71,12 @@ Random::getheat(const std::shared_ptr<ReplacementData>& replacement_data,
 {
     return 0;
 }
-
+uint64_t
+Random::gettime(const std::shared_ptr<ReplacementData>& replacement_data,
+            const int i) const
+{
+    return 0;
+}
 void
 Random::reset(const std::shared_ptr<ReplacementData>& replacement_data) const
 {
