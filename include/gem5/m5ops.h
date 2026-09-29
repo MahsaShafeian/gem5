@@ -66,6 +66,12 @@ void m5_load_symbol();
 void m5_panic(void);
 void m5_work_begin(uint64_t workid, uint64_t threadid);
 void m5_work_end(uint64_t workid, uint64_t threadid);
+// void m5_reset_log();
+// void m5_print_log();
+// void m5_print_address(uint64_t num);
+void m5_log_action(uint64_t Program, uint64_t action,
+                   uint64_t functionNumber, uint64_t rbpAddr,
+                   uint64_t stackSize);
 
 /*
  * Send a very generic poke to the workload so it can do something. It's up to

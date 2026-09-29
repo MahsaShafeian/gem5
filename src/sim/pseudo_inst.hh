@@ -113,7 +113,12 @@ void workend(ThreadContext *tc, uint64_t workid, uint64_t threadid);
 void m5Syscall(ThreadContext *tc);
 void togglesync(ThreadContext *tc);
 void triggerWorkloadEvent(ThreadContext *tc);
-
+// void resetLog(ThreadContext *tc);
+// void printLog(ThreadContext *tc);
+// void printAddress(ThreadContext *tc, uint64_t num);
+void logAction(ThreadContext *tc, uint64_t Program, uint64_t action,
+               uint64_t functionNumber, uint64_t rbpAddr,
+               uint64_t stackSize);
 
 /**
  * Execute a decoded M5 pseudo instruction
@@ -225,6 +230,22 @@ pseudoInstWork(ThreadContext *tc, uint8_t func, uint64_t &result)
       case M5OP_PANIC:
         panic("M5 panic instruction called at %s\n", tc->pcState());
 
+      // case M5OP_RESET_LOG:
+      //   invokeSimcall<ABI>(tc, resetLog);
+      //   return true;
+
+      // case M5OP_PRINT_LOG:
+      //   invokeSimcall<ABI>(tc, printLog);
+      //   return true;
+
+      // case M5OP_PRINT_ADDR:
+      //   invokeSimcall<ABI>(tc, printAddress);
+      //   return true;
+
+      case M5OP_LOG_ACTION:
+        invokeSimcall<ABI>(tc, logAction);
+        return true;
+
       case M5OP_WORK_BEGIN:
         invokeSimcall<ABI>(tc, workbegin);
         return true;
@@ -234,12 +255,14 @@ pseudoInstWork(ThreadContext *tc, uint8_t func, uint64_t &result)
         return true;
 
       case M5OP_RESERVED1:
-      case M5OP_RESERVED2:
-      case M5OP_RESERVED3:
-      case M5OP_RESERVED4:
-      case M5OP_RESERVED5:
         warn("Unimplemented m5 op (%#x)\n", func);
         return false;
+      // case M5OP_RESERVED2:
+      // case M5OP_RESERVED3:
+      //case M5OP_RESERVED4:
+      //case M5OP_RESERVED5:
+      //  warn("Unimplemented m5 op (%#x)\n", func);
+      //  return false;
 
       /* dist-gem5 functions */
       case M5OP_DIST_TOGGLE_SYNC:

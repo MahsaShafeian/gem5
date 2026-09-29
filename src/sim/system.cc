@@ -42,11 +42,16 @@
 #include "sim/system.hh"
 
 #include <algorithm>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
 
+#include "arch/generic/mmu.hh"
 #include "base/compiler.hh"
 #include "base/cprintf.hh"
 #include "base/loader/object_file.hh"
 #include "base/loader/symtab.hh"
+#include "base/output.hh"
 #include "base/str.hh"
 #include "base/trace.hh"
 #include "cpu/base.hh"
@@ -56,8 +61,10 @@
 #include "debug/WorkItems.hh"
 #include "mem/abstract_mem.hh"
 #include "mem/physical.hh"
+#include "mem/request.hh"
 #include "params/System.hh"
 #include "sim/byteswap.hh"
+#include "sim/cur_tick.hh"
 #include "sim/debug.hh"
 #include "sim/redirect_path.hh"
 #include "sim/serialize_handlers.hh"
@@ -66,6 +73,313 @@ namespace gem5
 {
 
 std::vector<System *> System::systemList;
+
+// system.cc
+void System::addWrite(Addr paddr, Addr vaddr, uint8_t size, int coreId) {
+    std::lock_guard<std::mutex> lock(logMutex);
+    // Book the write against the core that issued it. Each core has its own
+    // private L1D, so set indices from different cores are not comparable.
+    unsigned c = (coreId >= 0 && coreId < (int)STORM_MAX_CORES)
+                     ? (unsigned)coreId : STORM_MAX_CORES;
+    stormCoreSeen[c] = true;
+    writeAccessMap[c][{paddr >> 2, vaddr >> 2}]++;
+
+    unsigned set    = (paddr / STORM_BLK) % STORM_NUM_SETS;
+    unsigned region = (paddr % STORM_BLK) / STORM_REGION_SZ;
+    unsigned words  = (size + STORM_REGION_SZ - 1) / STORM_REGION_SZ;
+    for (unsigned w = 0; w < words; ++w) {
+        unsigned r = (region + w) % STORM_NUM_REGION;
+        unsigned s = (set + (region + w) / STORM_NUM_REGION) % STORM_NUM_SETS;
+        stormGrid[c][s][r]++;
+        stormSetWrites[c][s]++;
+    }
+    Tick now = curTick();
+    if (stormLastTick[c][set]) {              // cooling time since last write
+        stormDelayAccum[c][set] += (now - stormLastTick[c][set]);
+        stormDelaySamples[c][set]++;
+    }
+    stormLastTick[c][set] = now;
+}
+
+void System::printWrites(uint64_t Program) {
+    if (++writecall == 4){
+        std::cout << "--------------> print log <-------------->" << std::endl;
+        for (unsigned c = 0; c < STORM_SLOTS; ++c) {
+            if (!stormCoreSeen[c]) continue;
+            for (const auto& entry : writeAccessMap[c]) {
+                std::cout << "PAddr:0x" << std::hex << (entry.first.paddr << 2)
+                        << " VAddr:0x" << (entry.first.vaddr << 2)
+                        << " Count:"   << std::dec << entry.second
+                        << " Core:";
+                if (c == STORM_MAX_CORES) std::cout << "NA";
+                else                      std::cout << c;
+                std::cout << std::endl;
+            }
+        }
+        std::cout << "----------------------------------------->" << std::endl;
+    }
+    else{
+        std::cout << "Writes skipped!" << std::endl;
+    }
+
+}
+
+void
+System::resetWrites(uint64_t Program) {
+    // no lock needed - called from logAction which already holds lock
+    for (unsigned c = 0; c < STORM_SLOTS; ++c) writeAccessMap[c].clear();
+    std::memset(stormGrid, 0, sizeof(stormGrid));
+    std::memset(stormSetWrites, 0, sizeof(stormSetWrites));
+    std::memset(stormLastTick, 0, sizeof(stormLastTick));
+    std::memset(stormDelayAccum, 0, sizeof(stormDelayAccum));
+    std::memset(stormDelaySamples, 0, sizeof(stormDelaySamples));
+    std::memset(stormCoreSeen, 0, sizeof(stormCoreSeen));
+}
+
+void System::stormDumpGrid() {
+    const char *fn = std::getenv("STORM_GRID_FILE");
+    std::ofstream out(simout.resolve("storm_grid.txt"));
+    // One block per core. Rows are the 128 sets of THAT core's private L1D;
+    // columns are the 16 four-byte regions within a 64-byte line.
+    for (unsigned c = 0; c < STORM_SLOTS; ++c) {
+        if (!stormCoreSeen[c]) continue;
+        if (c == STORM_MAX_CORES) out << "# core unattributed" << std::endl;
+        else                      out << "# core " << c << std::endl;
+        for (unsigned s = 0; s < STORM_NUM_SETS; ++s) {
+            for (unsigned r = 0; r < STORM_NUM_REGION; ++r) {
+                out << stormGrid[c][s][r];
+                if (r + 1 < STORM_NUM_REGION) out << "\t";
+            }
+            out << std::endl;
+        }
+    }
+}
+void System::stormDumpSets() {
+    const char *fn = std::getenv("STORM_SETS_FILE");
+    std::ofstream out(simout.resolve("storm_sets.csv"));
+    out << "core,set,writes,accum_delay_ticks,mean_inter_write_delay"
+        << std::endl;
+    for (unsigned c = 0; c < STORM_SLOTS; ++c) {
+        if (!stormCoreSeen[c]) continue;
+        for (unsigned s = 0; s < STORM_NUM_SETS; ++s) {
+            uint64_t mean = stormDelaySamples[c][s]
+                            ? stormDelayAccum[c][s] /
+                            stormDelaySamples[c][s] : 0;
+            if (c == STORM_MAX_CORES) out << "NA";
+            else                      out << c;
+            out << "," << s << "," << stormSetWrites[c][s] << ","
+                << stormDelayAccum[c][s] << "," << mean << std::endl;
+        }
+    }
+}
+
+void
+System::printAddress(uint64_t Program)
+{
+    // std::cout << "C" << std::endl;
+    std::cout << "[Program " << Program << "] "
+              << "appAddress: 0x" << std::hex << appVaddr
+              << std::dec << std::endl;
+}
+
+// void
+// System::printAddress(uint64_t num, uint64_t state) {
+//     if (num == 1){
+//         std::cout << "aAddress1: 0x" << std::hex << aVaddr
+//               << " bAddress1: 0x" << bVaddr
+//               << " cAddress1: 0x" << cVaddr
+//               << " dAddress1: 0x" << dVaddr
+//               << " eAddress1: 0x" << eVaddr
+//               << " fAddress1: 0x" << fVaddr
+//               << " gAddress1: 0x" << gVaddr
+//               << " hAddress1: 0x" << hVaddr
+//               << std::dec << std::endl;
+//     }if (num == 2){
+//         std::cout << "aAddress2: 0x" << std::hex << aVaddr
+//               << " bAddress2: 0x" << bVaddr
+//               << " cAddress2: 0x" << cVaddr
+//               << " dAddress2: 0x" << dVaddr
+//               << " eAddress2: 0x" << eVaddr
+//               << " fAddress2: 0x" << fVaddr
+//               << " gAddress2: 0x" << gVaddr
+//               << " hAddress2: 0x" << hVaddr
+//               << std::dec << std::endl;
+//     }if (num == 3){
+//         std::cout << "aAddress3: 0x" << std::hex << aVaddr
+//               << " bAddress3: 0x" << bVaddr
+//               << " cAddress3: 0x" << cVaddr
+//               << " dAddress3: 0x" << dVaddr
+//               << " eAddress3: 0x" << eVaddr
+//               << " fAddress3: 0x" << fVaddr
+//               << " gAddress3: 0x" << gVaddr
+//               << " hAddress3: 0x" << hVaddr
+//               << std::dec << std::endl;
+//     }if (num == 4){
+//         std::cout << "aAddress4: 0x" << std::hex << aVaddr
+//               << " bAddress4: 0x" << bVaddr
+//               << " cAddress4: 0x" << cVaddr
+//               << " dAddress4: 0x" << dVaddr
+//               << " eAddress4: 0x" << eVaddr
+//               << " fAddress4: 0x" << fVaddr
+//               << " gAddress4: 0x" << gVaddr
+//               << " hAddress4: 0x" << hVaddr
+//               << std::dec << std::endl;
+//     }
+
+// }
+
+uint64_t
+System::incrementFunctionCall(uint64_t Program,
+                              uint64_t functionNumber,
+                              uint64_t rbpVA,
+                              uint64_t rbpPA,
+                              uint64_t stackSize)
+{
+    FunctionKey key{
+    Program,
+    functionNumber,
+    rbpVA,
+    stackSize
+    };
+
+    auto &info = functionCallCounts[key];
+
+    info.rbpPA = rbpPA;
+    ++info.callCount;
+
+    if (info.callCount == 1) {
+        std::cout << "[FIRSTCALL] Program=" << Program
+                  << " Func=" << functionNumber
+                  << " PA=0x" << std::hex << rbpPA << std::dec
+                  << " colour=" << ((rbpPA >> 12) & 1)
+                  << std::endl;
+    }
+
+    return info.callCount;
+}
+
+void
+System::logAction(ThreadContext *tc,
+                  uint64_t Program,
+                  uint64_t action,
+                  uint64_t functionNumber,
+                  uint64_t rbpVA,
+                  uint64_t stackSize)
+{
+    std::lock_guard<std::mutex> lock(logMutex);
+
+    Addr rbpPA = 0;
+
+    RequestPtr req = std::make_shared<Request>(
+                    rbpVA,
+                    8,
+                    Request::Flags(0),
+                    Request::funcRequestorId,
+                    0,
+                    tc->contextId());
+
+    Fault fault =
+        tc->getMMUPtr()->translateFunctional(
+            req,
+            tc,
+            BaseMMU::Read);
+
+    if (fault == NoFault) {
+        rbpPA = req->getPaddr();
+    }
+    switch (action)
+    {
+        case LOG_FUNCTION_INFO:
+        {
+            uint64_t callCount =
+                incrementFunctionCall(Program,
+                                      functionNumber,
+                                      rbpVA,
+                                      rbpPA,
+                                      stackSize);
+            break;
+        }
+        case LOG_RESET_WRITES:
+        {
+            if (reset){
+                resetWrites(Program);
+                printStart_Reset();
+                reset = false;
+            }
+            else{
+                std::cout << "Reset skipped!" << std::endl;
+            }
+            break;
+        }
+
+
+        case LOG_PRINT_WRITES:
+        {
+            std::cout << "\n";
+            std::cout << "========================================\n";
+            std::cout << "[DEBUG] Program " << Program
+                    << " reached LOG_PRINT_WRITES\n";
+
+            printWrites(Program);
+            stormDumpGrid();
+            stormDumpSets();
+            if (writecall == 4) {
+                printFunctionCallCounts();
+                printEnd();
+            }
+            else{
+                std::cout << "Function call counts not printed!" << std::endl;
+            }
+            break;
+        }
+
+
+        // case LOG_PRINT_ADDRESS:
+        //     printAddress(Program);
+        //     break;
+
+        // case LOG_FUNCTION_INFO:
+        //     printFunctionInfo(Program, rbpAddr, callCount);
+        //     break;
+
+        default:
+            std::cout << "Unknown Action: " << action << std::endl;
+            break;
+    }
+}
+
+void
+System::printFunctionCallCounts() const
+{
+    std::cout << "===== Function Call Counts =====\n";
+
+    for (const auto &[key, info] : functionCallCounts)
+    {
+        std::cout
+            << "[Program " << key.Program
+            << "] Func=" << key.functionNumber
+            << " RBP(VA)=0x" << std::hex << key.rbpVA
+            << " RBP(PA)=0x" << info.rbpPA
+            << std::dec
+            << " Stack=" << key.stackSize
+            << " Calls=" << info.callCount
+            << std::endl;
+    }
+
+    std::cout << "================================\n";
+}
+void
+System::printEnd() const
+{
+    std::cout << "===== End of Function =====\n";
+}
+void
+System::printStart_Reset() const
+{
+    std::cout << "===== Reset =====\n";
+    std::cout << "===== Start of Function =====\n";
+
+}
 
 void
 System::Threads::Thread::resume()

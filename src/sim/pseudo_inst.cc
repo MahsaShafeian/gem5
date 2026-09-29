@@ -62,6 +62,7 @@
 #include "mem/se_translating_port_proxy.hh"
 #include "mem/translating_port_proxy.hh"
 #include "params/BaseCPU.hh"
+#include "sim/cur_tick.hh"
 #include "sim/full_system.hh"
 #include "sim/process.hh"
 #include "sim/serialize.hh"
@@ -472,6 +473,56 @@ switchcpu(ThreadContext *tc)
 {
     DPRINTF(PseudoInst, "pseudo_inst::switchcpu()\n");
     exitSimLoop("switchcpu");
+}
+
+// void
+// resetLog(ThreadContext *tc)
+// {
+//     System *sys = tc->getSystemPtr();
+//     sys->resetWrites();
+// }
+
+// void
+// printLog(ThreadContext *tc)
+// {
+//     System *sys = tc->getSystemPtr();
+//     sys->printWrites();
+// }
+
+// void
+// printAddress(ThreadContext *tc, uint64_t num)
+// {
+//     System *sys = tc->getSystemPtr();
+//     sys->printAddress(num);
+// }
+
+void
+logAction(ThreadContext *tc,
+            uint64_t Program,
+            uint64_t action,
+            uint64_t functionNumber,
+            uint64_t rbpVA,
+            uint64_t stackSize)
+{
+    // std::cout << ">>> logAction called:"
+    //           << " program=" << Program
+    //           << " action=" << action
+    //           << " rbpAddr=0x" << std::hex << rbpAddr
+    //           << " callCount=" << std::dec << callCount
+    //           << std::endl;
+    // std::cout
+    //     << "Tick=" << curTick()
+    //     << " ThreadContext = " << tc
+    //     << " CPU=" << tc->getCpuPtr()->name()
+    //     << " Thread=" << tc->threadId()
+    //     << " Program=" << Program
+    //     << std::endl;
+
+    System *sys = tc->getSystemPtr();
+    sys->logAction(tc, Program, action, functionNumber, rbpVA, stackSize);
+
+
+    // sys->printFunctionCallCounts();
 }
 
 void

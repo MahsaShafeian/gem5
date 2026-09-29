@@ -42,6 +42,8 @@
 #ifndef __SYSTEM_HH__
 #define __SYSTEM_HH__
 
+#include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -51,13 +53,16 @@
 #include "base/loader/memory_image.hh"
 #include "base/loader/symtab.hh"
 #include "base/statistics.hh"
+#include "base/types.hh"
 #include "cpu/pc_event.hh"
+#include "cpu/thread_context.hh"
 #include "enums/MemoryMode.hh"
 #include "mem/mem_requestor.hh"
 #include "mem/physical.hh"
 #include "mem/port.hh"
 #include "mem/port_proxy.hh"
 #include "params/System.hh"
+#include "sim/eventq.hh"
 #include "sim/futex_map.hh"
 #include "sim/redirect_path.hh"
 #include "sim/se_signal.hh"
@@ -73,8 +78,22 @@ class ThreadContext;
 
 class System : public SimObject, public PCEventScope
 {
-  private:
 
+
+  private:
+    bool doPrint = false;
+
+  public:
+    Addr appVaddr = 0;
+    // Addr bVaddr = 0;
+    // Addr cVaddr = 0;
+    // Addr dVaddr = 0;
+    // Addr eVaddr = 0;
+    // Addr fVaddr = 0;
+    // Addr gVaddr = 0;
+    // Addr hVaddr = 0;
+
+  private:
     /**
      * Private class for the system port which is only used as a
      * requestor for debug access and for non-structural entities that do
@@ -112,7 +131,170 @@ class System : public SimObject, public PCEventScope
         deviceMemMap;
 
   public:
+    void addWrite(Addr paddr, Addr vaddr, uint8_t size, int coreId);
+    void printWrites(uint64_t Program);
+    void resetWrites(uint64_t Program);
+    void printAddress(uint64_t Program);
+    void logAction(ThreadContext *tc, uint64_t Program, uint64_t action,
+                   uint64_t functionNumber,uint64_t rbpVA,uint64_t stackSize);
+    void printFunctionCallCounts() const;
+    void printEnd() const;
+    void printStart_Reset() const;
 
+    enum LogAction
+    {
+      LOG_RESET_WRITES        = 0,
+      LOG_PRINT_WRITES       = 1,
+    //   LOG_PRINT_ADDRESS      = 2,
+      LOG_FUNCTION_INFO      = 3,
+    };
+    struct FunctionInfo
+    {
+        uint64_t callCount = 0;
+        uint64_t rbpPA = 0;
+    };
+
+    // system.hh — alternative if you need both paddr and vaddr
+    struct AddrKey
+    {
+        Addr paddr;
+        Addr vaddr;
+        bool operator==(const AddrKey& o) const {
+            return paddr == o.paddr && vaddr == o.vaddr;
+        }
+    };
+    struct AddrKeyHash
+    {
+        std::size_t operator()(const AddrKey& k) const {
+            return std::hash<Addr>{}(k.paddr) ^
+                  (std::hash<Addr>{}(k.vaddr) << 32);
+        }
+    };
+
+
+
+    struct FunctionKey
+    {
+        uint64_t Program;
+        uint64_t functionNumber;
+        uint64_t rbpVA;
+        uint64_t stackSize;
+
+        bool operator==(const FunctionKey &other) const
+        {
+            return Program == other.Program &&
+                  functionNumber == other.functionNumber &&
+                  rbpVA == other.rbpVA &&
+                  stackSize == other.stackSize;
+        }
+    };
+
+    struct FunctionKeyHash
+    {
+        std::size_t operator()(const FunctionKey &k) const
+        {
+            std::size_t h = std::hash<uint64_t>{}(k.Program);
+
+            h ^= std::hash<uint64_t>{}(k.functionNumber)
+                + 0x9e3779b9 + (h << 6) + (h >> 2);
+
+            h ^= std::hash<uint64_t>{}(k.rbpVA)
+                + 0x9e3779b9 + (h << 6) + (h >> 2);
+
+            h ^= std::hash<uint64_t>{}(k.stackSize)
+                + 0x9e3779b9 + (h << 6) + (h >> 2);
+
+            return h;
+        }
+    };
+  private:
+    uint64_t incrementFunctionCall(uint64_t Program,
+                               uint64_t functionNumber,
+                               uint64_t rbpVA,
+                               uint64_t rbpPA,
+                               uint64_t stackSize);
+
+    mutable std::mutex logMutex;
+    std::unordered_map<FunctionKey, FunctionInfo,
+                       FunctionKeyHash> functionCallCounts;
+    static constexpr unsigned STORM_BLK       = 64;
+    static constexpr unsigned STORM_NUM_SETS  = 128;
+    static constexpr unsigned STORM_REGION_SZ = 4;
+    static constexpr unsigned STORM_NUM_REGION = STORM_BLK / STORM_REGION_SZ;
+    static constexpr unsigned STORM_MAX_CORES = 8;
+    static constexpr unsigned STORM_SLOTS     = STORM_MAX_CORES + 1;
+    uint64_t stormGrid[STORM_SLOTS][STORM_NUM_SETS][STORM_NUM_REGION] = {};
+    uint64_t stormSetWrites[STORM_SLOTS][STORM_NUM_SETS] = {};
+    Tick     stormLastTick[STORM_SLOTS][STORM_NUM_SETS]  = {};
+    uint64_t stormDelayAccum[STORM_SLOTS][STORM_NUM_SETS] = {};
+    uint64_t stormDelaySamples[STORM_SLOTS][STORM_NUM_SETS] = {};
+    bool     stormCoreSeen[STORM_SLOTS] = {};
+
+    std::unordered_map<AddrKey, uint64_t, AddrKeyHash>
+        writeAccessMap[STORM_SLOTS];
+    int writecall = 0;
+    bool reset = true;
+
+  public:
+    // ---- StORM set x region aggregation + inter-write delay ----
+
+    void stormDumpGrid();   // -> $STORM_GRID_FILE (default storm_grid.txt)
+    void stormDumpSets();   // -> $STORM_SETS_FILE (default storm_sets.csv)
+
+//     void addWrite(ContextID ctxId, Addr paddr, Addr vaddr, uint8_t size);
+//     void printWrites(uint64_t program);
+//     void resetWrites(uint64_t program);
+//     void logAction(ThreadContext *tc, uint64_t program, uint64_t action,
+//                    uint64_t functionNumber, uint64_t rbpVA,
+//                    uint64_t stackSize);
+//     void printFunctionCallCounts(uint64_t program) const;
+
+//     enum LogAction
+//     {
+//         LOG_RESET_WRITES  = 0,
+//         LOG_PRINT_WRITES  = 1,
+//         LOG_FUNCTION_INFO = 3,
+//     };
+
+//     struct AddrKey
+//     {
+//         Addr paddr;
+//         Addr vaddr;
+//         bool operator==(const AddrKey &o) const
+//         { return paddr == o.paddr && vaddr == o.vaddr; }
+//     };
+
+//     struct AddrKeyHash
+//     {
+//         std::size_t operator()(const AddrKey &k) const
+//         {
+//             std::size_t h = std::hash<Addr>{}(k.paddr);
+//             h ^= std::hash<Addr>{}(k.vaddr)
+//                  + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+//             return h;
+//         }
+//     };
+
+//     struct ProgramSlot
+//     {
+//         uint64_t program = 0;
+//         bool     active  = false;
+//     };
+
+//   private:
+//     /* which program is currently being measured on each hardware thread */
+//     std::unordered_map<ContextID, ProgramSlot> ctxToProgram;
+
+//     /* program id -> that program's own write map */
+//     std::unordered_map<uint64_t,
+//         std::unordered_map<AddrKey, uint64_t, AddrKeyHash>> writeAccessMap;
+
+//     std::unordered_map<FunctionKey, FunctionInfo, FunctionKeyHash>
+//         functionCallCounts;
+
+//     mutable std::mutex logMutex;
+
+  public:
     class Threads
     {
       private:

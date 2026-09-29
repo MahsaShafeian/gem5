@@ -47,6 +47,7 @@
 
 #include "base/compiler.hh"
 #include "base/logging.hh"
+#include "cpu/base.hh"
 #include "debug/Cache.hh"
 #include "debug/CacheComp.hh"
 #include "debug/CachePort.hh"
@@ -1316,6 +1317,13 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
     // The critical latency part of a write depends only on the tag access
     if (pkt->isWrite()) {
         lat = calculateTagOnlyLatency(pkt->headerDelay, tag_latency);
+        if (pkt->req->hasVaddr()) {
+            system->appVaddr = pkt->req->getVaddr();
+            system->addWrite(pkt->getAddr(), pkt->req->getVaddr(),
+                             pkt->getSize(),
+                             pkt->req->hasContextId()
+                                 ? (int)pkt->req->contextId() : -1);
+        }
     }
 
     // Writeback handling is special case.  We can write the block into
@@ -1475,7 +1483,16 @@ BaseCache::access(PacketPtr pkt, CacheBlk *&blk, Cycles &lat,
         // Calculate access latency based on the need to access the data array
         if (pkt->isRead()) {
             lat = calculateAccessLatency(blk, pkt->headerDelay, tag_latency);
-
+            // if (pkt->req->hasVaddr()) {
+            //     system->hVaddr = system->gVaddr;
+            //     system->gVaddr = system->fVaddr;
+            //     system->fVaddr = system->eVaddr;
+            //     system->eVaddr = system->dVaddr;
+            //     system->dVaddr = system->cVaddr;
+            //     system->cVaddr = system->bVaddr;
+            //     system->bVaddr = system->aVaddr;
+            //     system->aVaddr = 0;
+            // }
             // When a block is compressed, it must first be decompressed
             // before being read. This adds to the access latency.
             if (compressor) {
